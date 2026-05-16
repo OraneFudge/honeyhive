@@ -214,10 +214,10 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                     const rand = Math.random();
                     if (rand < 0.4) {
                         s.boss.state = 'shoot';
-                        s.boss.attackTimer = 2.0;
+                        s.boss.attackTimer = 2.0; 
                     } else if (rand < 0.7) {
                         s.boss.state = 'telegraph';
-                        s.boss.attackTimer = 1.5;
+                        s.boss.attackTimer = 1.6;
                         // Create telegraph
                         s.telegraphs.push({ x: s.player.x - 75, y: 0, width: 150, height: 600, delay: 1.0, active: false });
                     } else {
@@ -228,14 +228,22 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 }
             } else if (s.boss.state === 'shoot') {
                 s.boss.targetX = s.player.x;
-                s.boss.x += (s.boss.targetX - s.boss.x) * 0.01; // slowly track player while shooting
+                s.boss.x += (s.boss.targetX - s.boss.x) * 0.01; 
                 
-                if (Math.random() < 0.1) {
-                    // Circle spray
+                if (Math.random() < 0.12) {
+                    // Restored bullet density (8 bullets, faster velocity)
                     for (let i=0; i<8; i++) {
                         const angle = (i / 8) * Math.PI * 2 + (now / 1000);
-                        s.bullets.push({ x: s.boss.x, y: s.boss.y + 40, vx: Math.cos(angle)*3.0, vy: Math.sin(angle)*3.0, radius: 6, isBoss: true });
+                        s.bullets.push({ 
+                            x: s.boss.x, 
+                            y: s.boss.y + 40, 
+                            vx: Math.cos(angle)*3.5, 
+                            vy: Math.sin(angle)*3.5, 
+                            radius: 6, 
+                            isBoss: true 
+                        });
                     }
+                    s.particles.push({ type: 'muzzle', x: s.boss.x, y: s.boss.y + 40, life: 0.1 });
                 }
                 
                 if (s.boss.attackTimer <= 0) {
@@ -249,7 +257,7 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 
                 if (s.boss.attackTimer <= 0) {
                     s.boss.state = 'idle';
-                    s.boss.attackTimer = 1.0;
+                    s.boss.attackTimer = 0.8;
                 }
             } else if (s.boss.state === 'dash_prep') {
                 // Pull back windup
@@ -322,11 +330,11 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             // Update Telegraphs
             for (let i = s.telegraphs.length - 1; i >= 0; i--) {
                 const tg = s.telegraphs[i];
-                if (tg.delay > 0) {
+                if (!tg.active && tg.delay > 0) {
                     tg.delay -= dt;
                     if (tg.delay <= 0) {
                         tg.active = true;
-                        tg.delay = 0.2; // Hit duration
+                        tg.delay = 0.5; // Hit duration
                     }
                 } else if (tg.active) {
                     tg.delay -= dt;
