@@ -37,7 +37,9 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
         hp: 100,
         bossHp: 1000,
         energy: 0,
-        gameOver: false
+        gameOver: false,
+        cinematic: null as 'win' | 'lose' | null,
+        cinematicTimer: 0
     });
 
     useEffect(() => {
@@ -509,12 +511,53 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             setEnergy(s.energy);
             setShieldUses(s.player.shieldUses);
 
-            if (s.hp <= 0) {
-                s.gameOver = true;
-                onLose();
-            } else if (s.bossHp <= 0) {
-                s.gameOver = true;
-                onWin();
+            if (!s.cinematic) {
+                if (s.hp <= 0) {
+                    s.cinematic = 'lose';
+                    s.cinematicTimer = 2.5; // Longer for the "charge" drama
+                    s.boss.state = 'final_charge';
+                    // Stop bullets for focus
+                    s.bullets = [];
+                } else if (s.bossHp <= 0) {
+                    s.cinematic = 'win';
+                    s.cinematicTimer = 3.0; // Explosion duration
+                    s.boss.state = 'disintegrate';
+                    s.bullets = [];
+                }
+            }
+
+            if (s.cinematic) {
+                s.cinematicTimer -= dt;
+                if (s.cinematicTimer <= 0) {
+                    s.gameOver = true;
+                    if (s.cinematic === 'win') onWin();
+                    else onLose();
+                }
+
+                // Disintegrate effect (Victory)
+                if (s.cinematic === 'win') {
+                    for(let i=0; i<3; i++) {
+                        s.particles.push({
+                            type: 'normal',
+                            x: s.boss.x + (Math.random()-0.5)*80,
+                            y: s.boss.y + (Math.random()-0.5)*100,
+                            vx: (Math.random()-0.5)*15,
+                            vy: (Math.random()-0.5)*15,
+                            life: 1.5,
+                            color: 'white'
+                        });
+                    }
+                    if (Math.random() < 0.2) {
+                         s.particles.push({ type: 'flash', life: 0.2 });
+                    }
+                }
+
+                // Charge effect (Loss)
+                if (s.cinematic === 'lose') {
+                   // Move boss to look like it's eating the camera
+                   s.boss.x += (s.player.x - s.boss.x) * 0.1;
+                   s.boss.y += (s.player.y - s.boss.y) * 0.1;
+                }
             }
 
             draw(ctx, s);
@@ -683,6 +726,19 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             ctx.save();
             ctx.translate(s.boss.x, s.boss.y);
             
+            if (s.cinematic === 'win') {
+                const progress = 1.0 - (s.cinematicTimer / 3.0);
+                ctx.globalAlpha = 1.0 - progress;
+            } else if (s.cinematic === 'lose') {
+                // Blackout transition at the very end
+                const progress = 1.0 - (s.cinematicTimer / 2.5);
+                if (progress > 0.8) {
+                    const blackAlpha = (progress - 0.8) / 0.2;
+                    // We'll draw a screen filler at the end of draw function, 
+                    // but for now let's just scale the eye up
+                }
+            }
+            
             if (s.boss.state === 'dash_prep') {
                 ctx.rotate(Math.sin(now/20) * 0.1);
             }
@@ -799,7 +855,17 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             // --- GIANT GROTESQUE EYE HEAD ---
             // Scaled and breathing
             const breath = Math.sin(now/400) * 0.05;
-            ctx.scale(1 + breath, 1 + breath);
+            let finalScale = 1 + breath;
+            
+            if (s.cinematic === 'lose') {
+                const progress = 1.0 - (s.cinematicTimer / 2.5);
+                finalScale *= (1 + Math.pow(progress, 3) * 50); // Massive zoom
+            } else if (s.cinematic === 'win') {
+                const progress = 1.0 - (s.cinematicTimer / 3.0);
+                ctx.globalAlpha = 1.0 - progress;
+            }
+
+            ctx.scale(finalScale, finalScale);
 
             ctx.save();
             // Head Shadow
@@ -1011,6 +1077,16 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                     ctx.arc(p.x, p.y, 2 + p.life*2, 0, Math.PI*2);
                     ctx.fill();
                     ctx.globalAlpha = 1.0;
+                }
+            }
+            
+            // Blackout at the end of loss cinematic
+            if (s.cinematic === 'lose') {
+                const progress = 1.0 - (s.cinematicTimer / 2.5);
+                if (progress > 0.8) {
+                    const blackAlpha = (progress - 0.8) / 0.2;
+                    ctx.fillStyle = `rgba(0, 0, 0, ${blackAlpha})`;
+                    ctx.fillRect(0, 0, 800, 600);
                 }
             }
         };

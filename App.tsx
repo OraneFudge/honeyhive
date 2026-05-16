@@ -1387,14 +1387,10 @@ export default function App() {
                 <div className="relative z-10 scale-90 md:scale-100 shadow-[0_0_100px_rgba(255,0,0,0.4)] border-8 border-gray-900 bg-[#0a0500] overflow-hidden flex rounded-xl isolate">
                     <BossFight 
                         onWin={() => {
-                            if (hasItem('干枯的花朵') && hasItem('记忆碎片') && hasItem('破碎的皇冠')) {
-                                triggerEnding(EndingType.REVOLUTION);
-                            } else {
-                                triggerEnding(EndingType.ASCENSION);
-                            }
+                            triggerEnding(EndingType.SALVATION);
                         }}
                         onLose={() => {
-                            triggerEnding(EndingType.CONSUMED);
+                            triggerEnding(EndingType.SUBJUGATION);
                         }}
                     />
                     <div className="pointer-events-none absolute inset-0 mix-blend-overlay opacity-30">

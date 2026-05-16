@@ -444,6 +444,8 @@ export const EndingScreen = ({
             case EndingType.GHOST: return { title: "GHOST", sub: "幽灵", desc: "你不再被看见，也不再被需要。你在六边形的缝隙中，化作永恒徘徊的幽灵。", color: "#9e9e9e", icon: "ghost", stamp: "EXPUNGED", stampColor: "text-gray-800 border-gray-800", anim: "animate-pulse" };
             case EndingType.EXECUTED: return { title: "EXECUTED", sub: "处决", desc: "异端必须被抹除。你的生命在狂热的蜂拥中瞬间消散。", color: "#b71c1c", icon: "skull", stamp: "ERADICATED", stampColor: "text-red-900 border-red-900", anim: "animate-ping" };
             case EndingType.IMPRISONED: return { title: "IMPRISONED", sub: "监禁", desc: "你被关进了暗无天日的虫室，等待你的是无尽的清洗与重塑。", color: "#37474f", icon: "lock", stamp: "DETAINED", stampColor: "text-gray-900 border-gray-900", anim: "animate-pulse-slow" };
+            case EndingType.SALVATION: return { title: "SALVATION", sub: "救赎", desc: "枷锁碎裂。你目睹了神性的崩塌，从这扭曲的摇篮中获得了最终的解脱。", color: "#fff", icon: "sparkle", stamp: "LIBERATED", stampColor: "text-blue-500 border-blue-500", anim: "animate-float" };
+            case EndingType.SUBJUGATION: return { title: "SUBJUGATION", sub: "服从", desc: "王座之下，再无光亮。你成为了女王永恒的基石，连灵魂也化作了琥珀。", color: "#000", icon: "eye", stamp: "SUBJUGATED", stampColor: "text-red-900 border-red-900", anim: "animate-pulse" };
             default: return { title: "END", sub: "终结", desc: "", color: "#000", icon: "hourglass", stamp: "UNKNOWN", stampColor: "text-black border-black", anim: "" };
         }
     };
