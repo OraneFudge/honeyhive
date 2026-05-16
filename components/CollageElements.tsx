@@ -339,7 +339,7 @@ export const PostProcessingLayer = ({ corruption, hpRatio }: { corruption: numbe
     );
 };
 
-export const DialogueBox = ({ speaker, text, options, onOption, typingText, corruption = 0 }: any) => {
+export const DialogueBox = ({ speaker, text, options, onOption, typingText, corruption = 0, selectedIdx = 0 }: any) => {
     const isHorror = corruption > 0.6;
     const isDissonant = corruption > 0.3;
 
@@ -367,19 +367,26 @@ export const DialogueBox = ({ speaker, text, options, onOption, typingText, corr
 
                 {options && options.length > 0 && (
                     <div className="mt-6 grid grid-cols-1 gap-3">
-                        {options.map((opt: any, idx: number) => (
-                            <button
-                                key={idx}
-                                onClick={() => onOption(opt)}
-                                className={`text-left border-2 border-black p-3 hover:translate-x-2 transition-all duration-200 font-cute font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] group flex items-center ${isHorror ? 'bg-black text-red-500 hover:bg-red-900' : 'bg-white text-black hover:bg-honey-light'}`}
-                                style={{ clipPath: 'polygon(2% 0%, 100% 0%, 98% 100%, 0% 100%)' }}
-                            >
-                                <span className={`mr-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center w-6 h-6 ${isHorror ? 'text-red-600' : 'text-rose-500'}`}>
-                                    <DrawnIcon name={isHorror ? 'eye' : 'honey'} />
-                                </span>
-                                {opt.text}
-                            </button>
-                        ))}
+                        {options.map((opt: any, idx: number) => {
+                            const isSelected = selectedIdx === idx;
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => onOption(opt)}
+                                    className={`text-left border-2 border-black p-3 transition-all duration-200 font-cute font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] group flex items-center ${
+                                        isSelected 
+                                            ? (isHorror ? 'bg-red-800 text-white translate-x-4 ring-2 ring-red-500' : 'bg-honey-main text-black translate-x-4 ring-2 ring-yellow-400')
+                                            : (isHorror ? 'bg-black text-red-500 hover:translate-x-2' : 'bg-white text-black hover:translate-x-2')
+                                    }`}
+                                    style={{ clipPath: 'polygon(2% 0%, 100% 0%, 98% 100%, 0% 100%)' }}
+                                >
+                                    <span className={`mr-3 transition-opacity flex items-center justify-center w-6 h-6 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} ${isHorror ? 'text-red-600' : 'text-rose-500'}`}>
+                                        <DrawnIcon name={isHorror ? 'eye' : 'honey'} />
+                                    </span>
+                                    {opt.text}
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
                 

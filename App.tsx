@@ -117,6 +117,7 @@ export default function App() {
   const [currentDialogue, setCurrentDialogue] = useState<DialogueNode | null>(null);
   const [typingText, setTypingText] = useState('');
   const [typingIndex, setTypingIndex] = useState(0);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
   
   // Visuals
   const [shake, setShake] = useState(0);
@@ -419,7 +420,7 @@ export default function App() {
       triggerEnding(EndingType.CONSUMED);
   };
 
-  const handleDialogueOption = (opt: { text: string, effect: string, item?: string, nextId: string | null }) => {
+  const handleDialogueOption = useCallback((opt: { text: string, effect: string, item?: string, nextId: string | null }) => {
       // Effects
       if (opt.effect === 'conform') {
           setHp(Math.min(MAX_HP, hp + 10));
@@ -492,6 +493,7 @@ export default function App() {
                   setCurrentDialogue(nextNode);
                   setTypingText('');
                   setTypingIndex(0);
+                  setSelectedOptionIndex(0);
               } else {
                   setGameState(GameState.PLAYING);
                   setCurrentDialogue(null);
@@ -507,7 +509,7 @@ export default function App() {
               setCurrentDialogue(null);
           }
       }
-  };
+  }, [hp, rebel, hasItem, triggerEnding, evaluateEnding, gameState, playSound]);
 
   const startDialogue = (type: EntityType, id: string) => {
       // Trigger lore unlocks based on entity type/id
@@ -548,6 +550,7 @@ export default function App() {
       setCurrentDialogue(node);
       setTypingText('');
       setTypingIndex(0);
+      setSelectedOptionIndex(0);
       playSound('select');
       
       // Mark as visited (increment count)
@@ -562,6 +565,8 @@ export default function App() {
                  setTypingText(currentDialogue.text);
              } else if (!currentDialogue.options || currentDialogue.options.length === 0) {
                  handleDialogueOption({ text: '', effect: 'neutral', nextId: null });
+             } else if (currentDialogue.options && currentDialogue.options.length > selectedOptionIndex) {
+                 handleDialogueOption(currentDialogue.options[selectedOptionIndex]);
              }
         }
         return;
@@ -594,7 +599,7 @@ export default function App() {
     // 3. If no entity in front, interact with self
     startDialogue(EntityType.PLAYER, 'self_inspect');
 
-  }, [gameState, player, map, entities, currentDialogue, items, playSound]);
+  }, [gameState, player, map, entities, currentDialogue, items, playSound, typingIndex, selectedOptionIndex, handleDialogueOption, startDialogue]);
 
   const movePlayer = useCallback((dx: number, dy: number, newDir: Direction) => {
       if (gameState !== GameState.PLAYING || transitioning) return;
@@ -717,6 +722,7 @@ export default function App() {
         if (showIntro) return; // Block input while modal is open
 
         if (gameState === GameState.TITLE) {
+            e.preventDefault();
             setGameState(GameState.PLAYING);
             playSound('select');
             const hasShownIntro = sessionStorage.getItem('panopticon_has_shown_intro_session');
@@ -728,7 +734,26 @@ export default function App() {
         }
         
         if (gameState === GameState.GAME_OVER) {
-            return; // Handled by button
+            if (e.key === ' ' || e.key === 'Enter') {
+                resetGame();
+                playSound('select');
+            }
+            return;
+        }
+
+        if (gameState === GameState.DIALOGUE || gameState === GameState.ENDING) {
+            if (currentDialogue && currentDialogue.options && currentDialogue.options.length > 0) {
+                if (e.key === 'ArrowUp' || e.key === 'w') {
+                    setSelectedOptionIndex(prev => (prev > 0 ? prev - 1 : currentDialogue.options!.length - 1));
+                    playSound('move');
+                    return;
+                }
+                if (e.key === 'ArrowDown' || e.key === 's') {
+                    setSelectedOptionIndex(prev => (prev < currentDialogue.options!.length - 1 ? prev + 1 : 0));
+                    playSound('move');
+                    return;
+                }
+            }
         }
 
         switch(e.key) {
@@ -736,7 +761,10 @@ export default function App() {
             case 'ArrowDown': case 's': movePlayer(0, 1, Direction.DOWN); break;
             case 'ArrowLeft': case 'a': movePlayer(-1, 0, Direction.LEFT); break;
             case 'ArrowRight': case 'd': movePlayer(1, 0, Direction.RIGHT); break;
-            case ' ': case 'Enter': handleInteraction(); break;
+            case ' ': case 'Enter': 
+                e.preventDefault();
+                handleInteraction(); 
+                break;
         }
     };
     
@@ -1335,6 +1363,7 @@ export default function App() {
                     onOption={handleDialogueOption}
                     typingText={typingText}
                     corruption={corruptionLevel}
+                    selectedIdx={selectedOptionIndex}
                 />
             </div>
         )}
@@ -1343,17 +1372,7 @@ export default function App() {
         {gameState === GameState.GAME_OVER && (
             <EndingScreen 
                 type={endingType} 
-                onRestart={() => {
-                    setGameState(GameState.TITLE);
-                    setHp(MAX_HP);
-                    setRebel(0);
-                    setItems([]);
-                    setVisited({});
-                    setCurrentMapId(MapId.ENTRANCE);
-                    setMap(MAPS[MapId.ENTRANCE].layout);
-                    setEntities(MAPS[MapId.ENTRANCE].entities);
-                    setPlayer({ x: 6, y: 6, dir: Direction.DOWN });
-                }} 
+                onRestart={resetGame} 
                 stats={{ hp, rebel, items }}
             />
         )}

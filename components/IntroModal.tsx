@@ -9,7 +9,30 @@ interface IntroModalProps {
 }
 
 export const IntroModal: React.FC<IntroModalProps> = ({ onClose, unlockedLore, corruption }) => {
+    const tabs: ('background' | 'mechanics' | 'objectives' | 'npcs')[] = ['background', 'mechanics', 'objectives', 'npcs'];
     const [activeTab, setActiveTab] = useState<'background' | 'mechanics' | 'objectives' | 'npcs'>('background');
+
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
+                onClose();
+                return;
+            }
+            if (e.key === 'ArrowUp' || e.key === 'w') {
+                setActiveTab(prev => {
+                    const idx = tabs.indexOf(prev);
+                    return tabs[idx > 0 ? idx - 1 : tabs.length - 1];
+                });
+            } else if (e.key === 'ArrowDown' || e.key === 's') {
+                setActiveTab(prev => {
+                    const idx = tabs.indexOf(prev);
+                    return tabs[idx < tabs.length - 1 ? idx + 1 : 0];
+                });
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-body">

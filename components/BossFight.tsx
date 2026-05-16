@@ -12,6 +12,7 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
     const [hp, setHp] = useState(100);
     const [bossHp, setBossHp] = useState(1000);
     const [energy, setEnergy] = useState(0);
+    const [shieldUses, setShieldUses] = useState(3);
 
     useEffect(() => {
         stopBGM();
@@ -23,10 +24,12 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
 
     // Using ref for mutable game state
     const state = useRef({
-        player: { x: 400, y: 500, speed: 5.5, size: 4, isShielding: false, shieldCooldown: 0 },
-        keys: { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, q: false, e: false, ' ': false },
+        player: { x: 400, y: 500, speed: 5.5, size: 4, isShielding: false, shieldUses: 3, shieldTimer: 0 },
+        keys: { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, q: false, e: false, e_prev: false, ' ': false },
         bullets: [] as any[],
         playerBullets: [] as any[],
+        items: [] as any[], // Healing flowers
+        itemSpawnTimer: 5.0,
         boss: { x: 400, y: 100, baseY: 100, width: 80, height: 100, attackTimer: 0, state: 'idle', targetX: 400, targetY: 100, dashVelY: 0 },
         particles: [] as any[],
         telegraphs: [] as any[],
@@ -164,17 +167,36 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             }
             
             // Shield
-            if (s.shieldCooldown > 0) s.shieldCooldown -= dt;
-            if (s.keys.e && s.shieldCooldown <= 0) {
-                s.isShielding = true;
+            if (s.player.shieldTimer > 0) {
+                s.player.shieldTimer -= dt;
+                s.player.isShielding = true;
             } else {
-                s.isShielding = false;
+                s.player.isShielding = false;
             }
-            if (!s.keys.e && s.isShielding) {
-                s.shieldCooldown = 1.0; // 1 second cooldown after releasing
+
+            if (s.keys.e && !s.keys.e_prev) {
+                if (s.player.shieldUses > 0 && s.player.shieldTimer <= 0) {
+                    s.player.shieldUses -= 1;
+                    s.player.shieldTimer = 2.0; // 2 seconds of invincibility
+                    
+                    // Shield sound
+                    const actx = getCtx();
+                    const osc = actx.createOscillator();
+                    const gain = actx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, actx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1000, actx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.05, actx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.3);
+                    osc.connect(gain);
+                    gain.connect(actx.destination);
+                    osc.start();
+                    osc.stop(actx.currentTime + 0.3);
+                }
             }
+            s.keys.e_prev = !!s.keys.e;
             
-            const speed = s.isShielding ? s.player.speed * 0.45 : s.player.speed;
+            const speed = s.player.isShielding ? s.player.speed * 0.45 : s.player.speed;
             s.player.x += dx * speed * dt * 60;
             s.player.y += dy * speed * dt * 60;
             
@@ -195,10 +217,22 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 s.energy = 0;
                 s.bullets = []; // Clear all enemy bullets
                 s.telegraphs = []; // Clear telegraphs
-                s.bossHp -= 150; // Big damage
+                s.bossHp -= 200; // Big damage: 20% of 1000
                 
                 // Screen flash effect (render later)
                 s.particles.push({ type: 'flash', life: 1.0 });
+                // Extra ultimate effect particles
+                for (let i=0; i<50; i++) {
+                    s.particles.push({
+                        type: 'normal',
+                        x: Math.random() * 800,
+                        y: Math.random() * 600,
+                        vx: (Math.random()-0.5)*10,
+                        vy: (Math.random()-0.5)*10,
+                        life: 1.0,
+                        color: 'white'
+                    });
+                }
             }
 
             // Boss Logic
@@ -377,7 +411,7 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 // Hit player
                 const dist = Math.hypot(b.x - s.player.x, b.y - s.player.y);
                 if (dist < s.player.size + b.radius) {
-                    if (!s.isShielding) {
+                    if (!s.player.isShielding) {
                         s.hp -= 5;
                         s.energy = Math.min(100, s.energy + 5); // Gain energy on hit too
                     }
@@ -388,7 +422,7 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             // Boss Dash hit check
             if (s.boss.state === 'dash') {
                 if (Math.abs(s.player.x - s.boss.x) < 40 + s.player.size && Math.abs(s.player.y - s.boss.y) < 50 + s.player.size) {
-                    if (!s.isShielding) s.hp -= 10;
+                    if (!s.player.isShielding) s.hp -= 10;
                     s.boss.y += 50; // Push boss down past to avoid multi-hit
                 }
             }
@@ -397,7 +431,7 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             for (const tg of s.telegraphs) {
                 if (tg.active) {
                     if (s.player.x > tg.x && s.player.x < tg.x + tg.width) {
-                        if (!s.isShielding) s.hp -= 1; // DoT
+                        if (!s.player.isShielding) s.hp -= 1; // DoT
                     }
                 }
             }
@@ -415,9 +449,65 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 }
             }
 
+            // Update Items (Healing Flowers)
+            s.itemSpawnTimer -= dt;
+            if (s.itemSpawnTimer <= 0) {
+                s.items.push({
+                    x: Math.random() * 700 + 50,
+                    y: -50,
+                    radius: 15,
+                    color: `hsl(${Math.random() * 360}, 80%, 65%)`
+                });
+                s.itemSpawnTimer = 4 + Math.random() * 6; // Spawn every 4-10s
+            }
+
+            for (let i = s.items.length - 1; i >= 0; i--) {
+                const it = s.items[i];
+                it.y += 2 + Math.sin(now / 500); // Slow oscillating drift
+                it.x += Math.cos(now / 1000) * 0.5;
+                
+                // Collision with player
+                const dist = Math.hypot(it.x - s.player.x, it.y - s.player.y);
+                if (dist < s.player.size + it.radius + 5) {
+                    s.hp = Math.min(100, s.hp + 15);
+                    s.items.splice(i, 1);
+                    
+                    // Healing sound
+                    const actx = getCtx();
+                    const osc = actx.createOscillator();
+                    const gain = actx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, actx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, actx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.05, actx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.3);
+                    osc.connect(gain);
+                    gain.connect(actx.destination);
+                    osc.start();
+                    osc.stop(actx.currentTime + 0.3);
+                    
+                    // Healing particles
+                    for(let j=0; j<12; j++){
+                        s.particles.push({
+                            type: 'normal',
+                            x: it.x,
+                            y: it.y,
+                            vx: (Math.random()-0.5)*6,
+                            vy: (Math.random()-0.5)*6,
+                            life: 0.8,
+                            color: it.color
+                        });
+                    }
+                    continue;
+                }
+
+                if (it.y > 650) s.items.splice(i, 1);
+            }
+
             setHp(s.hp);
             setBossHp(s.bossHp);
             setEnergy(s.energy);
+            setShieldUses(s.player.shieldUses);
 
             if (s.hp <= 0) {
                 s.gameOver = true;
@@ -826,17 +916,53 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 ctx.restore();
             }
 
+            // Draw Items (Flowers)
+            s.items.forEach(it => {
+                ctx.save();
+                ctx.translate(it.x, it.y);
+                ctx.rotate(now / 800);
+                
+                // Petals
+                ctx.fillStyle = it.color;
+                const petalCount = 6;
+                for (let i = 0; i < petalCount; i++) {
+                    ctx.rotate((Math.PI * 2) / petalCount);
+                    ctx.beginPath();
+                    // Each petal is an ellipse
+                    ctx.ellipse(it.radius * 0.7, 0, it.radius * 0.7, it.radius * 0.4, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Petal outline
+                    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                // Center
+                ctx.fillStyle = '#fff380';
+                ctx.beginPath();
+                ctx.arc(0, 0, it.radius * 0.35, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                ctx.stroke();
+                
+                ctx.restore();
+            });
+
             // Draw Player
             ctx.save();
             ctx.translate(s.player.x, s.player.y);
             
-            if (s.isShielding) {
+            if (s.player.isShielding) {
                 ctx.fillStyle = 'rgba(0, 200, 255, 0.3)';
                 ctx.beginPath();
                 ctx.arc(0, 0, 22, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
                 ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Add some shield energy ring effect
+                ctx.beginPath();
+                ctx.arc(0, 0, 22 - (Math.random()*2), 0, Math.PI * 2);
                 ctx.stroke();
             }
 
@@ -854,7 +980,7 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             ctx.fill();
 
             // Draw pure hitbox core so player knows where the actual danger is
-            if (s.isShielding) {
+            if (s.player.isShielding) {
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
                 ctx.beginPath();
                 ctx.arc(0, 0, s.player.size, 0, Math.PI * 2);
@@ -906,8 +1032,8 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             <div className="absolute top-4 left-4 text-orange-200 text-lg opacity-80 mix-blend-difference">
                 <p>W/A/S/D: 移动</p>
                 <p>Q: 攻击</p>
-                <p>E: 护盾 (消耗能量/CD)</p>
-                <p>Space: 大招 ({Math.floor((energy / 100) * 100)}%)</p>
+                <p>E: 护盾 ({shieldUses}/3) - 2秒无敌</p>
+                <p>Space: 大招 (清屏 + 20% 伤害 | {Math.floor((energy / 100) * 100)}%)</p>
             </div>
             
             <div className="absolute bottom-4 left-4 w-64">
