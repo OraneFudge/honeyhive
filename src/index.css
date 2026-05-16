@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --animate-breathe: breathe var(--breathe-dur, 4s) var(--anim-ease, ease-in-out) infinite;
+  --animate-wobble: wobble var(--wobble-dur, 3s) var(--anim-ease, ease-in-out) infinite;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-glitch: glitch var(--glitch-dur, 0.5s) steps(2) infinite;
+  --animate-color-shift: color-shift 10s ease-in-out infinite;
+  --animate-bg-pulse: bg-pulse 8s ease-in-out infinite;
+  --animate-blink: blink var(--blink-dur, 4s) infinite;
+  --animate-honey-pulse: honey-pulse 4s ease-in-out infinite;
+  --animate-shake: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-slide-in: slide-in 0.3s ease-out forwards;
+
+  @keyframes slide-in {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes breathe {
+    0%, 100% { transform: scale(var(--breathe-scale-min, 0.98)); opacity: var(--breathe-opacity, 0.8); }
+    50% { transform: scale(var(--breathe-scale-max, 1.02)); opacity: 1; }
+  }
+
+  @keyframes wobble {
+    0%, 100% { transform: rotate(calc(var(--wobble-deg, 2deg) * -1)) scale(1); }
+    50% { transform: rotate(var(--wobble-deg, 2deg)) scale(var(--wobble-scale, 1.05)); }
+  }
+
+  @keyframes glitch {
+    0% { transform: translate(0); }
+    20% { transform: translate(calc(var(--glitch-dist, 2px) * -1), var(--glitch-dist, 2px)); }
+    40% { transform: translate(calc(var(--glitch-dist, 2px) * -1), calc(var(--glitch-dist, 2px) * -1)); }
+    60% { transform: translate(var(--glitch-dist, 2px), var(--glitch-dist, 2px)); }
+    80% { transform: translate(var(--glitch-dist, 2px), calc(var(--glitch-dist, 2px) * -1)); }
+    100% { transform: translate(0); }
+  }
+
+  @keyframes color-shift {
+    0%, 100% { filter: hue-rotate(0deg); }
+    50% { filter: hue-rotate(15deg) saturate(1.5); }
+  }
+
+  @keyframes bg-pulse {
+    0%, 100% { background-color: #111827; } /* bg-gray-900 */
+    50% { background-color: #1f2937; } /* bg-gray-800 */
+  }
+
+  @keyframes blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.1); }
+  }
+
+  @keyframes honey-pulse {
+    0%, 100% { transform: scale(1) translateY(0); filter: brightness(1); }
+    50% { transform: scale(1.02) translateY(5px); filter: brightness(1.2); }
+  }
+
+  @keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+
+  --color-sweet-pink: #ff69b4;
+  --color-rotten-green: #8bc34a;
+  --color-honey-main: #ffca28;
+  --color-void-black: #0a0a0a;
+}

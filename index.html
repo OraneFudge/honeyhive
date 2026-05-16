@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#FFD700" />
+    <title>Citrus Hive: Dissonance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=ZCOOL+KuaiLe&family=M+PLUS+Rounded+1c:wght@400;700&family=Dosis:wght@400;700&family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              'ui': ['Dosis', '"ZCOOL KuaiLe"', '"M PLUS Rounded 1c"', 'sans-serif'],
+              'story': ['"Zen Maru Gothic"', '"ZCOOL KuaiLe"', '"M PLUS Rounded 1c"', 'serif'],
+              'horror': ['Creepster', '"ZCOOL KuaiLe"', 'cursive'],
+              'serif': ['"ZCOOL KuaiLe"', '"M PLUS Rounded 1c"', 'serif'],
+              'sans': ['"ZCOOL KuaiLe"', '"M PLUS Rounded 1c"', 'sans-serif'],
+              'mono': ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', '"ZCOOL KuaiLe"', 'monospace'],
+            },
+            colors: {
+              'honey-light': '#fff5cc',
+              'honey-main': '#ffcc00',
+              'honey-dark': '#e6b800',
+              'sweet-pink': '#ff99cc',
+              'rotten-green': '#556b2f',
+              'void-black': '#1a0505',
+            },
+            animation: {
+              'float': 'float 3s ease-in-out infinite',
+              'wiggle': 'wiggle 0.5s ease-in-out infinite',
+              'shake': 'shake 0.2s cubic-bezier(.36,.07,.19,.97) infinite',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'glitch': 'glitch 1s linear infinite',
+              'flicker': 'flicker 0.15s infinite',
+              'spin-slow': 'spin 20s linear infinite',
+              'distort': 'distort 0.5s ease-in-out infinite alternate',
+              'twitch': 'twitch 0.4s step-end infinite',
+              'limb-swing': 'limb-swing 2s ease-in-out infinite alternate',
+              'eye-scan': 'eye-scan 4s linear infinite',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              wiggle: {
+                '0%, 100%': { transform: 'rotate(-3deg)' },
+                '50%': { transform: 'rotate(3deg)' },
+              },
+              twitch: {
+                '0%, 100%': { transform: 'translate(0,0) rotate(0deg)' },
+                '25%': { transform: 'translate(1px, -1px) rotate(2deg)' },
+                '50%': { transform: 'translate(-1px, 1px) rotate(-1deg)' },
+                '75%': { transform: 'translate(2px, 0px) rotate(3deg)' },
+              },
+              'limb-swing': {
+                '0%': { transform: 'rotate(-5deg)' },
+                '100%': { transform: 'rotate(15deg)' },
+              },
+              'eye-scan': {
+                '0%, 100%': { transform: 'translateX(-5px)' },
+                '50%': { transform: 'translateX(5px)' },
+              },
+              shake: {
+                '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+              },
+              glitch: {
+                '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                '62%': { transform: 'translate(0,0) skew(5deg)' },
+              },
+              flicker: {
+                '0%, 100%': { opacity: '1' },
+                '50%': { opacity: '0.8' },
+                '20%, 80%': { opacity: '0.9' },
+              },
+              distort: {
+                '0%': { filter: 'hue-rotate(0deg) contrast(1)' },
+                '100%': { filter: 'hue-rotate(10deg) contrast(1.2)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --mouse-x: 0;
+        --mouse-y: 0;
+      }
+      body {
+        background-color: #1a0505;
+        overflow: hidden;
+      }
+      /* Collage cut-out effect */
+      .cutout {
+        filter: drop-shadow(2px 4px 0px rgba(0,0,0,0.3));
+      }
+      .paper-texture {
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.1'/%3E%3C/svg%3E");
+      }
+      
+      /* Chromatic Aberration Class */
+      .chromatic {
+        text-shadow: -2px 0 #ff00de, 2px 0 #00ffff;
+      }
+
+      /* Dynamic Honey Drip */
+      .honey-drip {
+        position: fixed;
+        top: -50px;
+        left: -5%;
+        width: 110%;
+        height: 200px;
+        background: url('data:image/svg+xml;utf8,<svg width="100%" height="100%" viewBox="0 0 1000 200" xmlns="http://www.w3.org/2000/svg"><path d="M0,0 L1000,0 L1000,50 C900,150 850,50 800,50 C750,50 700,180 600,100 C500,20 450,150 400,80 C300,10 200,150 100,50 L0,50 Z" fill="%23ffcc00" opacity="0.8"/></svg>');
+        background-size: cover;
+        pointer-events: none;
+        z-index: 40;
+        margin-left: calc(var(--mouse-x) * -20px);
+        margin-top: calc(var(--mouse-y) * -10px);
+        transition: filter 1s ease, margin 0.1s ease-out;
+      }
+
+      /* Scanlines */
+      .scanlines {
+        background: linear-gradient(
+          to bottom,
+          rgba(255,255,255,0),
+          rgba(255,255,255,0) 50%,
+          rgba(0,0,0,0.1) 50%,
+          rgba(0,0,0,0.1)
+        );
+        background-size: 100% 4px;
+        position: fixed;
+        pointer-events: none;
+        inset: -10%;
+        width: 120%;
+        height: 120%;
+        z-index: 50;
+        transform: translate(calc(var(--mouse-x) * 15px), calc(var(--mouse-y) * 15px));
+        transition: transform 0.1s ease-out;
+      }
+
+      /* Noise Overlay */
+      .grain-overlay {
+        inset: -10% !important;
+        width: 120% !important;
+        height: 120% !important;
+        transform: translate(calc(var(--mouse-x) * -15px), calc(var(--mouse-y) * -15px));
+        transition: transform 0.1s ease-out;
+      }
+    </style>
+    <script>
+      document.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 2;
+        const y = (e.clientY / window.innerHeight - 0.5) * 2;
+        document.documentElement.style.setProperty('--mouse-x', x);
+        document.documentElement.style.setProperty('--mouse-y', y);
+      });
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
