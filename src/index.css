@@ -12,6 +12,18 @@
   --animate-shake: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
   --animate-float: float 6s ease-in-out infinite;
   --animate-slide-in: slide-in 0.3s ease-out forwards;
+  --animate-puppet-walk: puppet-walk 0.7s step-end infinite;
+
+  --animate-eye-twitch: eye-twitch 3.5s infinite;
+
+  @keyframes eye-twitch {
+    0%, 90% { transform: translate(0, 0); }
+    92% { transform: translate(1px, -1px); }
+    94% { transform: translate(-1px, 1px); }
+    96% { transform: translate(1px, 0.5px); }
+    98% { transform: translate(-0.5px, -1px); }
+    100% { transform: translate(0, 0); }
+  }
 
   @keyframes slide-in {
     from { transform: translateX(100%); opacity: 0; }
@@ -68,6 +80,20 @@
     0% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
     100% { transform: translateY(0px); }
+  }
+
+  @keyframes puppet-walk {
+    0% { transform: translate(0, 0) rotate(0deg) scale(1) skewX(0deg); filter: blur(0px) contrast(1); }
+    10% { transform: translate(1px, -3px) rotate(2deg) scale(1.05) skewX(1deg); filter: blur(0.5px) contrast(1.2); }
+    20% { transform: translate(-1px, 2px) rotate(-1deg) scale(0.95) skewX(0deg); filter: blur(0px) contrast(0.9); }
+    30% { transform: translate(2px, -2px) rotate(-3deg) scale(1.02) skewX(-2deg); filter: blur(0.3px) contrast(1.1); }
+    40% { transform: translate(-2px, 4px) rotate(1deg) scale(0.98) skewX(0deg); filter: blur(0px) contrast(1); }
+    50% { transform: translate(0px, 0px) rotate(4deg) scale(1.04) skewX(3deg); filter: blur(0.6px) contrast(1.3); }
+    60% { transform: translate(-1px, -4px) rotate(-2deg) scale(0.96) skewX(-1deg); filter: blur(0px) contrast(0.8); }
+    70% { transform: translate(3px, 1px) rotate(0deg) scale(1.01) skewX(0deg); filter: blur(0.2px) contrast(1.1); }
+    80% { transform: translate(-2px, -1px) rotate(2deg) scale(0.99) skewX(2deg); filter: blur(0px) contrast(1); }
+    90% { transform: translate(1px, 3px) rotate(-1deg) scale(1.03) skewX(-1deg); filter: blur(0.4px) contrast(1.2); }
+    100% { transform: translate(0, 0) rotate(0deg) scale(1) skewX(0deg); filter: blur(0px) contrast(1); }
   }
 
   --color-sweet-pink: #ff69b4;

@@ -240,41 +240,69 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             // Boss Logic
             s.boss.attackTimer -= dt;
             
+            const hpRatioBoss = Math.max(0, s.bossHp / 1000);
+            const bossBrokenness = 1.0 - hpRatioBoss;
+            
             if (s.boss.state === 'idle') {
-                s.boss.targetX = 400 + Math.sin(now / 1500) * 250;
-                s.boss.targetY = 120 + Math.sin(now / 750) * 40;
-                s.boss.x += (s.boss.targetX - s.boss.x) * 0.03;
-                s.boss.y += (s.boss.targetY - s.boss.y) * 0.03;
+                if (bossBrokenness < 0.3) {
+                    s.boss.targetX = 400 + Math.sin(now / 1500) * 250;
+                    s.boss.targetY = 120 + Math.sin(now / 750) * 40;
+                } else if (bossBrokenness < 0.7) {
+                    s.boss.targetX = 400 + Math.sin(now / 1000) * 300 + Math.cos(now/500)*50;
+                    s.boss.targetY = 150 + Math.sin(now / 500) * 80;
+                } else { // Extreme randomness
+                    if (Math.random() < 0.05) {
+                        s.boss.targetX = s.player.x + (Math.random()-0.5)*200;
+                        s.boss.targetY = 100 + Math.random()*200;
+                    }
+                    // Jitter
+                    s.boss.targetX += (Math.random()-0.5)*50;
+                    s.boss.targetY += (Math.random()-0.5)*30;
+                }
+                
+                s.boss.x += (s.boss.targetX - s.boss.x) * (0.03 + bossBrokenness * 0.05);
+                s.boss.y += (s.boss.targetY - s.boss.y) * (0.03 + bossBrokenness * 0.05);
                 
                 if (s.boss.attackTimer <= 0) {
                     const rand = Math.random();
-                    if (rand < 0.4) {
+                    if (rand < 0.4 - bossBrokenness*0.1) {
                         s.boss.state = 'shoot';
-                        s.boss.attackTimer = 2.0; 
-                    } else if (rand < 0.7) {
+                        s.boss.attackTimer = 2.0 - bossBrokenness; // shoots less duration, but more often
+                    } else if (rand < 0.7 - bossBrokenness*0.1) {
                         s.boss.state = 'telegraph';
-                        s.boss.attackTimer = 1.6;
-                        // Create telegraph
-                        s.telegraphs.push({ x: s.player.x - 75, y: 0, width: 150, height: 600, delay: 1.0, active: false });
+                        s.boss.attackTimer = 1.6 - bossBrokenness*0.5;
+                        // Create telegraphs
+                        let numTelegraphs = 1 + Math.floor(bossBrokenness * 3);
+                        for(let i=0; i<numTelegraphs; i++) {
+                            s.telegraphs.push({ x: s.player.x - 75 + (Math.random()-0.5)*200, y: 0, width: 150, height: 600, delay: 1.0 - bossBrokenness*0.3, active: false });
+                        }
                     } else {
                         s.boss.state = 'dash_prep';
-                        s.boss.attackTimer = 1.2;
+                        s.boss.attackTimer = 1.2 - bossBrokenness*0.4;
                         s.boss.dashVelY = -5; // initial windup
                     }
                 }
             } else if (s.boss.state === 'shoot') {
                 s.boss.targetX = s.player.x;
-                s.boss.x += (s.boss.targetX - s.boss.x) * 0.01; 
+                s.boss.x += (s.boss.targetX - s.boss.x) * (0.01 + bossBrokenness * 0.04); 
                 
-                if (Math.random() < 0.12) {
-                    // Restored bullet density (8 bullets, faster velocity)
-                    for (let i=0; i<8; i++) {
-                        const angle = (i / 8) * Math.PI * 2 + (now / 1000);
+                // Jitter while shooting
+                if (bossBrokenness > 0.5) {
+                     s.boss.x += (Math.random() - 0.5) * 10;
+                     s.boss.y += (Math.random() - 0.5) * 10;
+                }
+                
+                if (Math.random() < 0.12 + bossBrokenness*0.1) { // Faster bullet emission
+                    let bulletCount = 8 + Math.floor(bossBrokenness * 8); // Up to 16 bullets
+                    for (let i=0; i<bulletCount; i++) {
+                        let spray = bossBrokenness > 0.6 ? (Math.random() - 0.5) * Math.PI : 0;
+                        const angle = (i / bulletCount) * Math.PI * 2 + (now / 1000) + spray;
+                        let bSpeed = 3.5 + bossBrokenness*2;
                         s.bullets.push({ 
                             x: s.boss.x, 
                             y: s.boss.y + 40, 
-                            vx: Math.cos(angle)*3.5, 
-                            vy: Math.sin(angle)*3.5, 
+                            vx: Math.cos(angle) * bSpeed, 
+                            vy: Math.sin(angle) * bSpeed, 
                             radius: 6, 
                             isBoss: true 
                         });
@@ -284,7 +312,7 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 
                 if (s.boss.attackTimer <= 0) {
                     s.boss.state = 'idle';
-                    s.boss.attackTimer = 1.0 + Math.random();
+                    s.boss.attackTimer = (1.0 + Math.random()) * (1.0 - bossBrokenness*0.5);
                 }
             } else if (s.boss.state === 'telegraph') {
                 // Stay still and vibrate
@@ -304,17 +332,20 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 s.boss.x += (Math.random() - 0.5) * 10;
                 
                 // Suck in particles
-                if (Math.random() < 0.5) {
-                    const ang = Math.random() * Math.PI * 2;
-                    s.particles.push({
-                         type: 'windup',
-                         x: s.boss.x + Math.cos(ang) * 100,
-                         y: s.boss.y + Math.sin(ang) * 100,
-                         vx: -Math.cos(ang) * 5,
-                         vy: -Math.sin(ang) * 5,
-                         life: 0.5,
-                         color: 'rgba(255, 0, 0, 0.8)'
-                    });
+                if (Math.random() < 0.8) { // Increased spawn rate
+                    for (let i = 0; i < 3; i++) {
+                        const ang = Math.random() * Math.PI * 2;
+                        const dist = 150 + Math.random() * 50;
+                        s.particles.push({
+                             type: 'windup',
+                             x: s.boss.x + Math.cos(ang) * dist,
+                             y: s.boss.y + Math.sin(ang) * dist,
+                             vx: -Math.cos(ang) * 12,
+                             vy: -Math.sin(ang) * 12,
+                             life: 0.8,
+                             color: i % 2 === 0 ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)'
+                        });
+                    }
                 }
 
                 if (s.boss.attackTimer <= 0) {
@@ -468,9 +499,14 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 it.y += 2 + Math.sin(now / 500); // Slow oscillating drift
                 it.x += Math.cos(now / 1000) * 0.5;
                 
-                // Collision with player
+                // Magnetic pull and Collision with player
                 const dist = Math.hypot(it.x - s.player.x, it.y - s.player.y);
-                if (dist < s.player.size + it.radius + 5) {
+                if (dist < 60) { // Magnetic radius
+                    it.x += (s.player.x - it.x) * 0.08;
+                    it.y += (s.player.y - it.y) * 0.08;
+                }
+                
+                if (dist < s.player.size + it.radius + 15) { // Increased pickup radius
                     s.hp = Math.min(100, s.hp + 15);
                     s.items.splice(i, 1);
                     
@@ -518,11 +554,120 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                     s.boss.state = 'final_charge';
                     // Stop bullets for focus
                     s.bullets = [];
+
+                    // Echoing horror jump scare sound
+                    const actx = getCtx();
+                    
+                    // Master compressor and delay network for massive reverb/echo
+                    const delay = actx.createDelay();
+                    delay.delayTime.value = 0.15;
+                    const feedback = actx.createGain();
+                    feedback.gain.value = 0.7; // Echo tail
+                    const compressor = actx.createDynamicsCompressor();
+                    
+                    delay.connect(feedback);
+                    feedback.connect(delay);
+                    delay.connect(compressor);
+                    
+                    const masterGain = actx.createGain();
+                    compressor.connect(masterGain);
+                    masterGain.connect(actx.destination);
+                    masterGain.gain.setValueAtTime(0.8, actx.currentTime);
+
+                    const osc1 = actx.createOscillator();
+                    const osc2 = actx.createOscillator();
+                    const lfo = actx.createOscillator();
+                    const oscGain = actx.createGain();
+                    const lfoGain = actx.createGain();
+                    
+                    osc1.type = 'sawtooth';
+                    osc1.frequency.setValueAtTime(80, actx.currentTime);
+                    osc1.frequency.exponentialRampToValueAtTime(1, actx.currentTime + 3.0);
+                    
+                    osc2.type = 'square';
+                    osc2.frequency.setValueAtTime(180, actx.currentTime);
+                    osc2.frequency.exponentialRampToValueAtTime(5, actx.currentTime + 3.0);
+                    
+                    lfo.type = 'sine';
+                    lfo.frequency.value = 30;
+                    lfoGain.gain.value = 100;
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(osc1.frequency);
+                    lfoGain.connect(osc2.frequency);
+
+                    oscGain.gain.setValueAtTime(0, actx.currentTime);
+                    oscGain.gain.linearRampToValueAtTime(1.0, actx.currentTime + 0.1);
+                    oscGain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 3.0);
+                    
+                    osc1.connect(oscGain);
+                    osc2.connect(oscGain);
+                    
+                    // Route to both dry and wet (delay) 
+                    oscGain.connect(compressor);
+                    oscGain.connect(delay);
+                    
+                    osc1.start();
+                    osc2.start();
+                    lfo.start();
+                    osc1.stop(actx.currentTime + 3.0);
+                    osc2.stop(actx.currentTime + 3.0);
+                    lfo.stop(actx.currentTime + 3.0);
+
                 } else if (s.bossHp <= 0) {
                     s.cinematic = 'win';
                     s.cinematicTimer = 3.0; // Explosion duration
                     s.boss.state = 'disintegrate';
                     s.bullets = [];
+
+                    // Boss explode sound (Divine/Shatter + delay)
+                    const actx = getCtx();
+                    const masterGain = actx.createGain();
+                    
+                    const delay = actx.createDelay();
+                    delay.delayTime.value = 0.2;
+                    const feedback = actx.createGain();
+                    feedback.gain.value = 0.5;
+                    delay.connect(feedback);
+                    feedback.connect(delay);
+                    delay.connect(masterGain);
+
+                    masterGain.connect(actx.destination);
+                    masterGain.gain.value = 0.7;
+
+                    for (let i = 0; i < 8; i++) {
+                        setTimeout(() => {
+                            const osc = actx.createOscillator();
+                            const gain = actx.createGain();
+                            osc.type = i % 2 === 0 ? 'square' : 'sawtooth';
+                            
+                            const freqBase = 100 + (Math.random() * 400);
+                            osc.frequency.setValueAtTime(freqBase * 2, actx.currentTime);
+                            osc.frequency.exponentialRampToValueAtTime(10, actx.currentTime + 1.2);
+                            
+                            gain.gain.setValueAtTime(0.8, actx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 1.2);
+                            
+                            osc.connect(gain);
+                            gain.connect(masterGain);
+                            gain.connect(delay); // Send to reverb/delay
+                            
+                            osc.start();
+                            osc.stop(actx.currentTime + 1.2);
+                        }, i * 200 + (Math.random() * 100)); // Staggered explosions
+                    }
+                    
+                    // Add a deep sub-bass boom
+                    const subOsc = actx.createOscillator();
+                    const subGain = actx.createGain();
+                    subOsc.type = 'sine';
+                    subOsc.frequency.setValueAtTime(150, actx.currentTime);
+                    subOsc.frequency.exponentialRampToValueAtTime(10, actx.currentTime + 3.0);
+                    subGain.gain.setValueAtTime(1.0, actx.currentTime);
+                    subGain.gain.linearRampToValueAtTime(0, actx.currentTime + 3.0);
+                    subOsc.connect(subGain);
+                    subGain.connect(masterGain);
+                    subOsc.start();
+                    subOsc.stop(actx.currentTime + 3.0);
                 }
             }
 
@@ -536,19 +681,32 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
 
                 // Disintegrate effect (Victory)
                 if (s.cinematic === 'win') {
-                    for(let i=0; i<3; i++) {
+                    // Lots of tiny glowing particles flying outwards
+                    for(let i=0; i<8; i++) {
                         s.particles.push({
                             type: 'normal',
-                            x: s.boss.x + (Math.random()-0.5)*80,
-                            y: s.boss.y + (Math.random()-0.5)*100,
-                            vx: (Math.random()-0.5)*15,
-                            vy: (Math.random()-0.5)*15,
-                            life: 1.5,
-                            color: 'white'
+                            x: s.boss.x + (Math.random()-0.5)*150,
+                            y: s.boss.y + (Math.random()-0.5)*150,
+                            vx: (Math.random()-0.5)*40,
+                            vy: (Math.random()-0.5)*40 - 20, // drift up
+                            life: 2.0,
+                            color: Math.random() > 0.5 ? '#ffffff' : '#ffeeaa'
                         });
                     }
-                    if (Math.random() < 0.2) {
-                         s.particles.push({ type: 'flash', life: 0.2 });
+                    // Streaking divine light rays
+                    if (Math.random() < 0.4) {
+                        s.particles.push({
+                            type: 'dash', // reuse dash particle style
+                            x: s.boss.x + (Math.random()-0.5)*200,
+                            y: s.boss.y + (Math.random()-0.5)*200,
+                            vx: 0,
+                            vy: -50 - Math.random()*50,
+                            life: 1.0,
+                            color: 'rgba(255, 255, 200, 0.8)'
+                        });
+                    }
+                    if (Math.random() < 0.3) {
+                         s.particles.push({ type: 'flash', life: 0.3 }); // frequent big flashes
                     }
                 }
 
@@ -557,6 +715,22 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                    // Move boss to look like it's eating the camera
                    s.boss.x += (s.player.x - s.boss.x) * 0.1;
                    s.boss.y += (s.player.y - s.boss.y) * 0.1;
+                   
+                   const progress = 1.0 - (s.cinematicTimer / 2.5);
+                   if (Math.random() < progress) {
+                        // Glitchy horror particles
+                        for(let i=0; i<Math.floor(progress * 5); i++) {
+                            s.particles.push({
+                                type: 'normal',
+                                x: s.boss.x + (Math.random()-0.5)*800,
+                                y: s.boss.y + (Math.random()-0.5)*600,
+                                vx: (Math.random()-0.5)*500,
+                                vy: (Math.random()-0.5)*500,
+                                life: 0.1 + Math.random()*0.2,
+                                color: Math.random() > 0.3 ? 'rgba(255,0,0,0.8)' : 'black'
+                            });
+                        }
+                   }
                 }
             }
 
@@ -567,6 +741,9 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
 
         const draw = (ctx: CanvasRenderingContext2D, s: typeof state.current) => {
             const now = performance.now();
+
+            const hpRatioBoss = Math.max(0, s.bossHp / 1000);
+            const bossBrokenness = 1.0 - hpRatioBoss;
 
             // Set canvas fonts and styles up front
             ctx.lineJoin = 'round';
@@ -589,14 +766,19 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 ctx.restore();
             };
 
-            // Background - Sickly, corrupted honey
-            ctx.fillStyle = '#140a00'; // Dark brown/amber
+            // Background - Sickly, corrupted honey -> transitioning to nightmare blood
+            const bgR = Math.floor(20 + bossBrokenness * 80);
+            const bgG = Math.floor(10 - bossBrokenness * 10);
+            const bgB = 0;
+            ctx.fillStyle = `rgb(${bgR}, ${bgG}, ${bgB})`; // Dark brown/amber -> dark meat
             ctx.fillRect(0, 0, 800, 600);
             
             // Collage-like textured background layer 1
             ctx.globalCompositeOperation = 'source-over';
-            for (let i = 0; i < 5; i++) {
-                ctx.fillStyle = i % 2 === 0 ? 'rgba(50, 20, 0, 0.4)' : 'rgba(255, 180, 0, 0.05)';
+            for (let i = 0; i < 5 + bossBrokenness * 5; i++) {
+                const color1 = `rgba(${50 + bossBrokenness*150}, 20, 0, ${0.4 + bossBrokenness*0.3})`;
+                const color2 = `rgba(${255 - bossBrokenness*100}, ${180 - bossBrokenness*180}, 0, 0.05)`;
+                ctx.fillStyle = i % 2 === 0 ? color1 : color2;
                 ctx.beginPath();
                 ctx.moveTo(Math.sin(now/1000 + i) * 200 + 400, Math.cos(now/800 + i) * 200 + 300);
                 ctx.lineTo(Math.cos(now/1200 - i) * 300 + 400, Math.sin(now/1500 + i) * 300 + 300);
@@ -605,70 +787,13 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             }
 
             // Strange scribbles in background
-            ctx.strokeStyle = 'rgba(255, 200, 100, 0.05)';
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = `rgba(255, ${200 - bossBrokenness*150}, ${100 - bossBrokenness*100}, ${0.05 + bossBrokenness*0.1})`;
+            ctx.lineWidth = 1 + bossBrokenness * 3;
             ctx.beginPath();
-            for (let i = 0; i < 40; i++) {
-                ctx.lineTo(Math.sin(i * 1.5 + now / 2500) * 800, Math.cos(i * 2.1 + now / 2700) * 600);
+            for (let i = 0; i < 40 + bossBrokenness * 40; i++) {
+                ctx.lineTo(Math.sin(i * 1.5 + now / 2500) * 800 + (Math.random()-0.5)*bossBrokenness*50, Math.cos(i * 2.1 + now / 2700) * 600 + (Math.random()-0.5)*bossBrokenness*50);
             }
             ctx.stroke();
-
-            // Draw Hexagon pattern (The Corrupted Hive)
-            ctx.lineWidth = 2;
-            const r = 35 + Math.sin(now/800) * 2; // Noticeable, large breathing hexes
-            const h = Math.sqrt(3) * r;
-            for (let y = -h; y < 600 + h; y += h) {
-                for (let x = -r*3; x < 800 + r * 3; x += r * 3) {
-                    const row = Math.floor(y / h);
-                    const xOffset = row % 2 !== 0 ? r * 1.5 : 0;
-                    
-                    const wobbleX = Math.sin(x/100 + now/1500) * 8;
-                    const wobbleY = Math.cos(y/100 + now/1200) * 8;
-                    
-                    const hexX = x + xOffset + wobbleX;
-                    const hexY = y + wobbleY;
-
-                    // Draw the honeycomb cell
-                    ctx.strokeStyle = `rgba(212, 175, 55, ${0.1 + Math.sin((x+y)/100 + now/500)*0.1})`; // Gold with pulsating opacity
-                    ctx.fillStyle = `rgba(30, 20, 0, ${0.4 + Math.sin((x-y)/100 + now/800)*0.2})`;
-                    
-                    ctx.beginPath();
-                    for (let i = 0; i < 6; i++) {
-                        const angle = (Math.PI / 180) * (60 * i);
-                        const px = hexX + r * Math.cos(angle);
-                        const py = hexY + r * Math.sin(angle);
-                        if (i === 0) ctx.moveTo(px, py);
-                        else ctx.lineTo(px, py);
-                    }
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.stroke();
-
-                    // Some cells have eyes
-                    if (Math.abs(x * 13 + y * 7) % 11 === 0) {
-                        ctx.save();
-                        // Eye pupil tracks the player slightly
-                        const dx = s.player.x - hexX;
-                        const dy = s.player.y - hexY;
-                        const dist = Math.hypot(dx, dy);
-                        const lookX = dist > 0 ? (dx / dist) * 4 : 0;
-                        const lookY = dist > 0 ? (dy / dist) * 4 : 0;
-
-                        // Sclera
-                        ctx.fillStyle = 'rgba(255, 240, 230, 0.4)';
-                        ctx.beginPath();
-                        ctx.ellipse(hexX, hexY, r*0.4, r*0.25, Math.sin(now/1000 + hexX)*0.2, 0, Math.PI*2);
-                        ctx.fill();
-                        
-                        // Pupil
-                        ctx.fillStyle = 'rgba(100, 0, 0, 0.8)';
-                        ctx.beginPath();
-                        ctx.arc(hexX + lookX, hexY + lookY, r*0.1, 0, Math.PI*2);
-                        ctx.fill();
-                        ctx.restore();
-                    }
-                }
-            }
 
             // Draw Telegraphs
             for (const tg of s.telegraphs) {
@@ -728,24 +853,77 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             
             if (s.cinematic === 'win') {
                 const progress = 1.0 - (s.cinematicTimer / 3.0);
-                ctx.globalAlpha = 1.0 - progress;
+                
+                // Extremely bright glowing shaking
+                const shake = Math.pow(progress, 2) * 20;
+                ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+                
+                // Exploding light beams from behind boss
+                ctx.save();
+                for (let i=0; i<12; i++) {
+                     const a = (i/12) * Math.PI*2 + now/(200 - progress*150);
+                     ctx.fillStyle = `rgba(255, 255, 255, ${progress})`;
+                     ctx.beginPath();
+                     ctx.moveTo(0,0);
+                     ctx.lineTo(Math.cos(a - 0.1)*1000, Math.sin(a - 0.1)*1000);
+                     ctx.lineTo(Math.cos(a + 0.1)*1000, Math.sin(a + 0.1)*1000);
+                     ctx.fill();
+                }
+                ctx.restore();
+
+                ctx.globalAlpha = 1.0 - Math.pow(progress, 2);
+                ctx.globalCompositeOperation = 'hard-light'; // Gives a blown-out look as it fades
             } else if (s.cinematic === 'lose') {
-                // Blackout transition at the very end
                 const progress = 1.0 - (s.cinematicTimer / 2.5);
+                const zoomScale = 1 + Math.pow(progress, 3) * 50; // Massive outer zoom
+                
+                // Erratic shake effect
+                const shakeIntensity = Math.pow(progress, 2) * 20; // Reduced from 50
+                ctx.translate(
+                    (Math.random() - 0.5) * shakeIntensity,
+                    (Math.random() - 0.5) * shakeIntensity
+                );
+                
+                // Center scaling relative to the boss
+                ctx.scale(zoomScale, zoomScale);
+                
                 if (progress > 0.8) {
-                    const blackAlpha = (progress - 0.8) / 0.2;
-                    // We'll draw a screen filler at the end of draw function, 
-                    // but for now let's just scale the eye up
+                    // Handled later via full-screen overlay, but we can do extra effects here if we want
                 }
             }
             
             if (s.boss.state === 'dash_prep') {
                 ctx.rotate(Math.sin(now/20) * 0.1);
+                
+                // Terrifying red/black radiating aura behind boss
+                ctx.save();
+                const pulse = Math.abs(Math.sin(now / 50));
+                ctx.globalAlpha = 0.5 + pulse * 0.5;
+                ctx.shadowColor = 'red';
+                ctx.shadowBlur = 40 + pulse * 40;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+                ctx.beginPath();
+                ctx.arc(0, 0, 150 + pulse * 50, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Spiky energy ring
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 4 + pulse * 4;
+                ctx.beginPath();
+                for (let i = 0; i < 30; i++) {
+                    const ang = (i / 30) * Math.PI * 2 + (now / 100);
+                    const r = 120 + Math.random() * 80 * pulse;
+                    if (i === 0) ctx.moveTo(Math.cos(ang) * r, Math.sin(ang) * r);
+                    else ctx.lineTo(Math.cos(ang) * r, Math.sin(ang) * r);
+                }
+                ctx.closePath();
+                ctx.stroke();
+                ctx.restore();
             }
             
             // --- GEKIDAN INU CURRY WINGS ---
             // Draw multiple layered, strange, long eye-wings
-            const drawEyeWing = (scaleX: number, angleOffset: number, phase: number, color1: string, color2: string) => {
+            const drawEyeWing = (scaleX: number, angleOffset: number, phase: number, color1: string, color2: string, brokenness: number) => {
                 ctx.save();
                 
                 let currentAngleOffset = angleOffset;
@@ -760,6 +938,11 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                     flapAnim = Math.sin(now/50 + phase) * 0.2; // faster flap while shooting
                 }
 
+                if (brokenness > 0) {
+                     flapAnim += Math.sin(now/(20 + brokenness*10) + phase*2) * 0.05 * brokenness; // jitter
+                     currentAngleOffset += brokenness * (Math.random() * 0.1 - 0.05);
+                }
+
                 ctx.rotate(currentAngleOffset + flapAnim);
                 ctx.scale(scaleX, 1);
                 
@@ -771,6 +954,9 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
 
                 // Wing Base (Sclera cutout)
                 ctx.fillStyle = s.boss.state === 'dash_prep' ? '#ffdddd' : '#fdfbf7'; // red flush when winding up
+                if (brokenness > 0.5) ctx.fillStyle = '#eedddd';
+                if (brokenness > 0.8) ctx.fillStyle = '#bb9999';
+
                 ctx.strokeStyle = '#220000';
                 ctx.lineWidth = 2.5;
                 ctx.beginPath();
@@ -778,13 +964,19 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 
                 // Add jagged edges to simulate torn paper
                 ctx.lineTo(20, -15);
-                ctx.lineTo(40, -40);
+                ctx.lineTo(40, -40 + brokenness * 20); // degenerate
                 // Wiggle points slightly for organic/stop-motion feel
-                const wiggle = Math.sin(now/100 + phase) * 2;
+                const wiggle = Math.sin(now/100 + phase) * (2 + brokenness * 5);
                 ctx.lineTo(60, -25 + wiggle);
-                ctx.lineTo(90, -30 - wiggle);
+                ctx.lineTo(90, -30 - wiggle - brokenness * 15);
                 ctx.lineTo(120, -10 + wiggle);
                 ctx.lineTo(150, 20);
+                
+                if (brokenness > 0.7 && Math.sin(now/200 + phase) > 0) {
+                     // Sometimes glitch out a huge hole
+                     ctx.lineTo(110, 10);
+                }
+
                 ctx.lineTo(130, 25 - wiggle);
                 ctx.lineTo(100, 30 + wiggle);
                 ctx.lineTo(60, 45);
@@ -798,48 +990,60 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
                 ctx.stroke();
 
                 // Abstract veins/textures/scribbles
-                ctx.strokeStyle = 'rgba(200,30,30,0.6)';
+                ctx.strokeStyle = `rgba(200,30,30,${0.6 + brokenness*0.4})`;
                 ctx.beginPath();
-                for(let i=0; i<5; i++) {
+                for(let i=0; i<5 + brokenness*5; i++) {
                    ctx.moveTo(20 + i*15, -10 + (Math.random()-0.5)*10);
-                   ctx.lineTo(100, 5 + i*2);
+                   ctx.lineTo(100, 5 + i*2 + (Math.random()-0.5)*10*brokenness);
                 }
                 ctx.stroke();
 
-                drawScribbles(75, 0, 30, 15, 'rgba(0,0,0,0.8)');
+                drawScribbles(75, 0, 30, 15, `rgba(0,0,0,${0.8 + brokenness*0.2})`);
 
-                // Iris (drawn like a layered cutout)
-                ctx.fillStyle = color1;
-                ctx.strokeStyle = '#000';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.ellipse(75, 0, 18, 28, Math.sin(now/500)*0.2, 0, Math.PI*2);
-                ctx.fill();
-                ctx.stroke();
+                if (brokenness < 0.9) {
+                    // Iris (drawn like a layered cutout)
+                    ctx.fillStyle = color1;
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.ellipse(75, Math.sin(now/100)*brokenness*5, 18 - brokenness*5, 28, Math.sin(now/500)*0.2 + brokenness*Math.random()*0.2, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
 
-                // Pupil
-                ctx.fillStyle = color2;
-                ctx.beginPath();
-                // Star/cross pupil
-                let focus = s.boss.state === 'dash_prep' ? 1.5 : 1; // pupil dilates
-                ctx.scale(focus, focus);
-                ctx.moveTo(75/focus, -20); ctx.lineTo(77/focus, -5); ctx.lineTo(90/focus, 0);
-                ctx.lineTo(77/focus, 5); ctx.lineTo(75/focus, 20); ctx.lineTo(73/focus, 5);
-                ctx.lineTo(60/focus, 0); ctx.lineTo(73/focus, -5); ctx.closePath();
-                ctx.fill();
+                    // Pupil
+                    ctx.fillStyle = color2;
+                    ctx.beginPath();
+                    // Star/cross pupil
+                    let focus = s.boss.state === 'dash_prep' ? 1.5 : 1; // pupil dilates
+                    ctx.scale(focus, focus);
+                    ctx.moveTo(75/focus, -20); ctx.lineTo(77/focus, -5); ctx.lineTo(90/focus, 0);
+                    ctx.lineTo(77/focus, 5); ctx.lineTo(75/focus, 20); ctx.lineTo(73/focus, 5);
+                    ctx.lineTo(60/focus, 0); ctx.lineTo(73/focus, -5); ctx.closePath();
+                    ctx.fill();
+                } else {
+                     // Dead eye socket
+                     ctx.fillStyle = '#110000';
+                     ctx.beginPath();
+                     ctx.ellipse(75, 0, 15, 20, 0, 0, Math.PI*2);
+                     ctx.fill();
+                     drawScribbles(75, 0, 20, 25, 'rgba(200,0,0,0.8)');
+                }
                 
                 ctx.restore();
             };
 
+            const hpRatio = Math.max(0, s.bossHp / 1000);
+            const brokenness = 1.0 - hpRatio;
+
             // Left Wings
-            drawEyeWing(-1, -0.2, 0, '#ff0055', '#ffff00');
-            drawEyeWing(-0.8, -0.6, 1, '#00ffff', '#ff0000');
-            drawEyeWing(-0.9, 0.2, 2, '#ffcc00', '#000000');
+            drawEyeWing(-1, -0.2, 0, '#ff0055', '#ffff00', brokenness);
+            drawEyeWing(-0.8, -0.6, 1, '#00ffff', '#ff0000', brokenness);
+            drawEyeWing(-0.9, 0.2, 2, '#ffcc00', '#000000', brokenness > 0.4 ? brokenness : 0);
 
             // Right Wings
-            drawEyeWing(1, 0.2, 0, '#ff0055', '#ffff00');
-            drawEyeWing(0.8, 0.6, 1, '#00ffff', '#ff0000');
-            drawEyeWing(0.9, -0.2, 2, '#ffcc00', '#000000');
+            drawEyeWing(1, 0.2, 0, '#ff0055', '#ffff00', brokenness);
+            drawEyeWing(0.8, 0.6, 1, '#00ffff', '#ff0000', brokenness);
+            drawEyeWing(0.9, -0.2, 2, '#ffcc00', '#000000', brokenness > 0.4 ? brokenness : 0);
 
             // Strange Halos/Scrapbook gears behind head
             ctx.save();
@@ -857,17 +1061,9 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             const breath = Math.sin(now/400) * 0.05;
             let finalScale = 1 + breath;
             
-            if (s.cinematic === 'lose') {
-                const progress = 1.0 - (s.cinematicTimer / 2.5);
-                finalScale *= (1 + Math.pow(progress, 3) * 50); // Massive zoom
-            } else if (s.cinematic === 'win') {
-                const progress = 1.0 - (s.cinematicTimer / 3.0);
-                ctx.globalAlpha = 1.0 - progress;
-            }
-
             ctx.scale(finalScale, finalScale);
-
             ctx.save();
+
             // Head Shadow
             ctx.shadowColor = 'rgba(0,0,0,0.9)';
             ctx.shadowBlur = 20;
@@ -875,13 +1071,26 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             ctx.shadowOffsetY = 15;
 
             // Eyeball Base (Torn paper circle)
-            ctx.fillStyle = '#fdf8f5'; // slightly sickly off-white
+            ctx.fillStyle = brokenness > 0.6 ? '#eecbcb' : '#fdf8f5'; // get bloodier
+            if (brokenness > 0.8) ctx.fillStyle = '#cc8888';
             ctx.strokeStyle = '#331111';
             ctx.lineWidth = 3;
             ctx.beginPath();
-            for(let i=0; i<20; i++) {
-                const a = (i/20) * Math.PI*2;
-                const r = 45 + Math.random()*4;
+            
+            const isLosing = s.cinematic === 'lose';
+            
+            for(let i=0; i<20 + brokenness*10; i++) {
+                const a = (i/(20 + brokenness*10)) * Math.PI*2;
+                let r = 45;
+                if (!isLosing) {
+                    r += Math.random()*4;
+                    if (brokenness > 0) {
+                         r += (Math.random() - 0.5) * 15 * brokenness; // jagged edge
+                    }
+                } else {
+                    // Smooth, intense stare outline
+                    r = 48 + Math.sin(a * 5 + now/300) * 2;
+                }
                 if(i===0) ctx.moveTo(Math.cos(a)*r, Math.sin(a)*r);
                 else ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
             }
@@ -892,14 +1101,20 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             ctx.restore();
 
             // Sclera Veins (Red pulsating roots)
-            ctx.strokeStyle = 'rgba(200, 20, 20, 0.6)';
-            ctx.lineWidth = 1.5;
-            for (let i = 0; i < 12; i++) {
+            ctx.strokeStyle = `rgba(200, 20, 20, ${0.6 + brokenness*0.4})`;
+            ctx.lineWidth = 1.5 + brokenness * 2;
+            for (let i = 0; i < 12 + brokenness * 10; i++) {
                 ctx.beginPath();
-                const a = (i / 12) * Math.PI*2 + now/2000;
-                ctx.moveTo(Math.cos(a)*40, Math.sin(a)*40);
+                const a = (i / (12 + brokenness * 10)) * Math.PI*2 + now/(2000 - brokenness*1000);
+                let startR = 40;
+                if (!isLosing) {
+                    startR += Math.random()*5*brokenness;
+                } else {
+                    startR += 5; // Intense dilated look
+                }
+                ctx.moveTo(Math.cos(a)*startR, Math.sin(a)*startR);
                 ctx.quadraticCurveTo(
-                    Math.cos(a + 0.2)*25, Math.sin(a + 0.2)*25,
+                    Math.cos(a + 0.2)*(25 - brokenness*10), Math.sin(a + 0.2)*(25 - brokenness*10),
                     Math.cos(a)*15, Math.sin(a)*15
                 );
                 ctx.stroke();
@@ -907,24 +1122,55 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
 
             // Iris (multicolored, spinning slightly)
             const trackAngle = Math.atan2(s.player.y - s.boss.y, s.player.x - s.boss.x);
-            const eyeLookX = Math.cos(trackAngle) * 10;
-            const eyeLookY = Math.sin(trackAngle) * 10;
+            let eyeLookX = Math.cos(trackAngle) * 10;
+            let eyeLookY = Math.sin(trackAngle) * 10;
+            
+            if (brokenness > 0.5 && !isLosing) {
+                // twitchy eye
+                eyeLookX += (Math.random() - 0.5) * 10 * brokenness;
+                eyeLookY += (Math.random() - 0.5) * 10 * brokenness;
+            } else if (isLosing) {
+                // Stop twitching and stare out of the screen
+                eyeLookX = 0;
+                eyeLookY = 0;
+            }
 
             const gradient = ctx.createRadialGradient(eyeLookX, eyeLookY, 5, eyeLookX, eyeLookY, 25);
-            gradient.addColorStop(0, '#55ffaa');
-            gradient.addColorStop(0.5, '#0088cc');
+            gradient.addColorStop(0, brokenness > 0.7 && !isLosing ? '#ff0000' : '#55ffaa');
+            gradient.addColorStop(0.5, brokenness > 0.8 && !isLosing ? '#550000' : '#0088cc');
             gradient.addColorStop(1, '#001133');
             
             ctx.fillStyle = gradient;
             ctx.beginPath();
-            ctx.ellipse(eyeLookX, eyeLookY, 25, 25, 0, 0, Math.PI*2);
+            ctx.ellipse(eyeLookX, eyeLookY, 25 - brokenness*5, 25 - brokenness*5, 0, 0, Math.PI*2);
             ctx.fill();
 
-            // Pupil (slit, tracking player)
+            // Pupil tracking player / Staring at user
             ctx.fillStyle = '#000';
             ctx.beginPath();
-            ctx.ellipse(eyeLookX, eyeLookY, 4, 18, trackAngle + Math.PI/2, 0, Math.PI*2);
+            if (isLosing) {
+                // Pupils dilate perfectly round staring out
+                const dilate = 6 + Math.sin(now/50)*2;
+                ctx.ellipse(eyeLookX, eyeLookY, dilate, dilate, 0, 0, Math.PI*2);
+            } else {
+                ctx.ellipse(eyeLookX, eyeLookY, 4 + brokenness*5, 18 - brokenness*5, trackAngle + Math.PI/2 + (Math.random()-0.5)*brokenness, 0, Math.PI*2);
+            }
             ctx.fill();
+            
+            // Multiple erratic pupils at high brokenness
+            if (brokenness > 0.6 && !isLosing) {
+                for(let i=0; i<3; i++) {
+                     ctx.beginPath();
+                     ctx.ellipse(
+                         eyeLookX + (Math.random()-0.5)*20, 
+                         eyeLookY + (Math.random()-0.5)*20, 
+                         2 + Math.random()*3, 
+                         10 + Math.random()*5, 
+                         Math.random()*Math.PI*2, 0, Math.PI*2
+                     );
+                     ctx.fill();
+                }
+            }
             
             // Highlight
             ctx.fillStyle = 'rgba(255,255,255,0.8)';
@@ -936,16 +1182,25 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             ctx.ellipse(eyeLookX + 8, eyeLookY + 8, 2, 3, trackAngle, 0, Math.PI*2);
             ctx.fill();
 
-            drawScribbles(0, 0, 40, 25, 'rgba(0,0,0,0.3)');
-
-            // Bleeding/Weeping from the eye
-            ctx.fillStyle = '#110000';
-            ctx.beginPath();
-            ctx.moveTo(-15, 30);
-            ctx.bezierCurveTo(-10, 60 + Math.sin(now/200)*5, -5, 50, 0, 40);
-            ctx.bezierCurveTo(5, 55, 10, 65 + Math.cos(now/300)*5, 15, 30);
-            ctx.fill();
-
+            drawScribbles(0, 0, 40, 25, `rgba(0,0,0,${0.3 + brokenness * 0.4})`);
+            
+            // Extra dripping blood holes
+            if (brokenness > 0.4) {
+                 for (let i = 0; i < 3 + brokenness*5; i++) {
+                      ctx.fillStyle = 'rgba(100, 0, 0, 0.8)';
+                      ctx.beginPath();
+                      const bx = (Math.random() - 0.5) * 60;
+                      const by = (Math.random() - 0.5) * 60;
+                      ctx.arc(bx, by, Math.random()*8 + 2, 0, Math.PI*2);
+                      ctx.fill();
+                      
+                      // Drip
+                      ctx.beginPath();
+                      ctx.moveTo(bx - 2, by);
+                      ctx.quadraticCurveTo(bx, by + 20 + Math.random()*40*brokenness, bx + 2, by);
+                      ctx.fill();
+                 }
+            }
 
             ctx.restore();
 
@@ -956,29 +1211,49 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             }
 
             // Draw Boss Bullets (scissors and abstract shapes)
-            for (const b of s.bullets) {
+            for (let i = 0; i < s.bullets.length; i++) {
+                const b = s.bullets[i];
                 ctx.save();
                 ctx.translate(b.x, b.y);
                 ctx.rotate(Math.atan2(b.vy, b.vx)); // Point in direction of velocity
-                ctx.fillStyle = '#dd0033';
-                ctx.strokeStyle = '#000';
-                ctx.lineWidth = 1;
                 
-                // Draw a weird scissor/blade shape
-                ctx.beginPath();
-                ctx.moveTo(10, 0);
-                ctx.lineTo(-5, -5);
-                ctx.lineTo(-10, 0);
-                ctx.lineTo(-5, 5);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
+                if (bossBrokenness > 0.6 && i % 3 === 0) {
+                     // Draw corrupted jagged blood spike
+                     ctx.fillStyle = '#660000';
+                     ctx.strokeStyle = '#ff0000';
+                     ctx.lineWidth = 1.5;
+                     ctx.beginPath();
+                     ctx.moveTo(15 + Math.random()*5, 0);
+                     ctx.lineTo(-5, -8 - Math.random()*5);
+                     ctx.lineTo(-8, 0);
+                     ctx.lineTo(-5, 8 + Math.random()*5);
+                     ctx.closePath();
+                     ctx.fill();
+                     ctx.stroke();
+                     
+                     // Trail dot
+                     ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                     ctx.beginPath(); ctx.arc(-15, 0, 2, 0, Math.PI*2); ctx.fill();
+                } else {
+                     // Normal scissor
+                     ctx.fillStyle = '#dd0033';
+                     ctx.strokeStyle = '#000';
+                     ctx.lineWidth = 1;
+                     ctx.beginPath();
+                     ctx.moveTo(10 + bossBrokenness*5, 0);
+                     ctx.lineTo(-5, -5 - bossBrokenness*2);
+                     ctx.lineTo(-10, 0);
+                     ctx.lineTo(-5, 5 + bossBrokenness*2);
+                     ctx.closePath();
+                     ctx.fill();
+                     ctx.stroke();
 
-                // Eye in the middle of bullet
-                ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#000';
-                ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, Math.PI*2); ctx.fill();
+                     // Eye in the middle of bullet
+                     ctx.fillStyle = bossBrokenness > 0.8 ? '#ffaaaa' : '#fff';
+                     ctx.beginPath(); ctx.arc(0, 0, 3 + bossBrokenness, 0, Math.PI*2); ctx.fill();
+                     ctx.fillStyle = '#000';
+                     ctx.beginPath(); ctx.arc(0, 0, 1.5 + bossBrokenness, 0, Math.PI*2); ctx.fill();
+                }
                 ctx.restore();
             }
 
@@ -1083,6 +1358,47 @@ export const BossFight: React.FC<BossFightProps> = ({ onWin, onLose }) => {
             // Blackout at the end of loss cinematic
             if (s.cinematic === 'lose') {
                 const progress = 1.0 - (s.cinematicTimer / 2.5);
+                
+                // Blood vignette creeping in
+                const r0 = Math.max(0, 400 - progress*400);
+                const r1 = Math.max(0, 600 - progress*200);
+                const grad = ctx.createRadialGradient(400, 300, r0, 400, 300, r1);
+                grad.addColorStop(0, 'rgba(100, 0, 0, 0)');
+                grad.addColorStop(1, `rgba(150, 0, 0, ${progress})`);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 800, 600);
+
+                // Intense inverted glitching
+                if (progress > 0.6) {
+                     if (Math.random() < progress*0.5) {
+                          ctx.globalCompositeOperation = 'difference';
+                          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                          ctx.fillRect(0, 0, 800, 600);
+                          ctx.globalCompositeOperation = 'source-over';
+                     }
+                }
+                
+                // Horror teeth/mouth closing over the screen
+                if (progress > 0.4) {
+                    ctx.fillStyle = 'black';
+                    const mouthOpe = Math.max(0, 1.0 - (progress - 0.4) / 0.6); // 1.0 to 0.0
+                    for(let i=-2; i<12; i++) {
+                         // Top teeth
+                         ctx.beginPath();
+                         ctx.moveTo(i*80 + 40, 300 * (1 - mouthOpe) - 100);
+                         ctx.lineTo(i*80 + 0, 0);
+                         ctx.lineTo(i*80 + 80, 0);
+                         ctx.fill();
+                         
+                         // Bottom teeth
+                         ctx.beginPath();
+                         ctx.moveTo(i*80 + 80, 300 + 300 * mouthOpe + 100);
+                         ctx.lineTo(i*80 + 40, 600);
+                         ctx.lineTo(i*80 + 120, 600);
+                         ctx.fill();
+                    }
+                }
+
                 if (progress > 0.8) {
                     const blackAlpha = (progress - 0.8) / 0.2;
                     ctx.fillStyle = `rgba(0, 0, 0, ${blackAlpha})`;

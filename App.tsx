@@ -358,7 +358,12 @@ export default function App() {
       setCurrentDialogue(node);
       setTypingText('');
       setTypingIndex(0);
-      playSound('horror');
+      
+      if (type === EndingType.EXECUTED || type === EndingType.SUBJUGATION) {
+          playSound('execution');
+      } else {
+          playSound('horror');
+      }
   };
 
   const evaluateEnding = () => {
@@ -1242,6 +1247,10 @@ export default function App() {
                 const pos = getHexPos(ent.x, ent.y);
                 const isChasing = rebel > 70 && ent.type === EntityType.SOLDIER_BEE && !ent.id.startsWith('guard_royal');
                 
+                const isNPC = [EntityType.WORKER_BEE, EntityType.SOLDIER_BEE, EntityType.NPC_OLD, EntityType.LARVA].includes(ent.type);
+                // Creating a stable pseudo-random delay based on coordinates
+                const animDelay = isNPC ? `-${((ent.x * 7 + ent.y * 13) % 10) * 0.1}s` : '0s';
+
                 return (
                     <div 
                         key={ent.id}
@@ -1253,7 +1262,10 @@ export default function App() {
                             top: pos.top,
                         }}
                     >
-                        <div className="w-full h-full p-2">
+                        <div 
+                            className={`w-full h-full p-2 ${isNPC ? 'animate-puppet-walk' : ''}`}
+                            style={{ animationDelay: animDelay }}
+                        >
                             {ent.type === EntityType.WORKER_BEE && <WorkerBeeSVG />}
                             {ent.type === EntityType.SOLDIER_BEE && <SoldierBeeSVG />}
                             {ent.type === EntityType.HONEY_POOL && <HoneyPoolSVG />}

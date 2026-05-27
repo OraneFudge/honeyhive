@@ -438,40 +438,42 @@ export const CitrusHeadSVG = ({ rot = 0, mood = 'neutral', corruption = 0 }: { r
 
             {/* Surreal Eye - Photo Cutout Style */}
             <g transform="translate(0, -2)" filter="url(#photoGrain)">
-                {/* Eye socket/shadow */}
-                <ellipse cx="0" cy="0" rx="10" ry="7" fill="#000" opacity="0.3" />
-                {/* Sclera - Yellowed or greyed when rotten */}
-                <ellipse cx="0" cy="0" rx="9" ry="6" fill={isRotten ? '#444' : '#f0f0f0'} stroke="black" strokeWidth="1.5" />
-                {/* Iris/Pupil - High contrast photo look */}
-                <circle cx="0" cy="0" r="5.5" fill="url(#photoEyeGrad)" />
-                <circle cx="0" cy="0" r="2.5" fill="#000" />
-                {/* Glint */}
-                <circle cx="2.5" cy="-2.5" r="1.5" fill="white" opacity={isRotten ? 0.3 : 0.8} />
-                
-                {/* Eyelashes - Sharp ink strokes */}
-                <g stroke="black" strokeWidth="1.2" strokeLinecap="round">
-                    <path d="M-7,-5 L-11,-12" />
-                    <path d="M-3,-6 L-4,-14" />
-                    <path d="M3,-6 L4,-14" />
-                    <path d="M7,-5 L11,-12" />
+                <g className="animate-eye-twitch">
+                    {/* Eye socket/shadow */}
+                    <ellipse cx="0" cy="0" rx="10" ry="7" fill="#000" opacity="0.3" />
+                    {/* Sclera - Yellowed or greyed when rotten */}
+                    <ellipse cx="0" cy="0" rx="9" ry="6" fill={isRotten ? '#444' : '#f0f0f0'} stroke="black" strokeWidth="1.5" />
+                    {/* Iris/Pupil - High contrast photo look */}
+                    <circle cx="0" cy="0" r="5.5" fill="url(#photoEyeGrad)" />
+                    <circle cx="0" cy="0" r="2.5" fill="#000" />
+                    {/* Glint */}
+                    <circle cx="2.5" cy="-2.5" r="1.5" fill="white" opacity={isRotten ? 0.3 : 0.8} />
+                    
+                    {/* Eyelashes - Sharp ink strokes */}
+                    <g stroke="black" strokeWidth="1.2" strokeLinecap="round">
+                        <path d="M-7,-5 L-11,-12" />
+                        <path d="M-3,-6 L-4,-14" />
+                        <path d="M3,-6 L4,-14" />
+                        <path d="M7,-5 L11,-12" />
+                    </g>
+                    
+                    {/* Scared / Rotten expressions */}
+                    {mood === 'scared' && (
+                        <g>
+                            <circle cx="0" cy="0" r="1" fill="#000" />
+                            <path d="M-4,-4 Q0,-6 4,-4" fill="none" stroke="#000" strokeWidth="0.5" />
+                            <path d="M-3,3 L-3,6 M3,3 L3,5" stroke="#000" strokeWidth="0.5" opacity="0.5" />
+                        </g>
+                    )}
+                    {isRotten && (
+                        <g>
+                            <path d="M-4,-5 L4,-3 M-4,5 L4,3" stroke="#000" strokeWidth="1" strokeDasharray="1,1" />
+                            <circle cx="-8" cy="-8" r="2" fill="url(#photoEyeGrad)" opacity="0.8" />
+                            <circle cx="6" cy="6" r="1.5" fill="url(#photoEyeGrad)" opacity="0.6" />
+                            <path d="M-2,2 Q2,6 0,10" fill="none" stroke="#b71c1c" strokeWidth="1" opacity="0.8" />
+                        </g>
+                    )}
                 </g>
-                
-                {/* Scared / Rotten expressions */}
-                {mood === 'scared' && (
-                    <g>
-                        <circle cx="0" cy="0" r="1" fill="#000" />
-                        <path d="M-4,-4 Q0,-6 4,-4" fill="none" stroke="#000" strokeWidth="0.5" />
-                        <path d="M-3,3 L-3,6 M3,3 L3,5" stroke="#000" strokeWidth="0.5" opacity="0.5" />
-                    </g>
-                )}
-                {isRotten && (
-                    <g>
-                        <path d="M-4,-5 L4,-3 M-4,5 L4,3" stroke="#000" strokeWidth="1" strokeDasharray="1,1" />
-                        <circle cx="-8" cy="-8" r="2" fill="url(#photoEyeGrad)" opacity="0.8" />
-                        <circle cx="6" cy="6" r="1.5" fill="url(#photoEyeGrad)" opacity="0.6" />
-                        <path d="M-2,2 Q2,6 0,10" fill="none" stroke="#b71c1c" strokeWidth="1" opacity="0.8" />
-                    </g>
-                )}
             </g>
             
             {/* Early Mold - Black Dots */}
@@ -899,13 +901,7 @@ export const WallEyeSVG = ({ corruption = 0 }: { corruption?: number }) => {
                     <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
                 </circle>
                 
-                {/* Veins / Scribbles */}
-                <g stroke={color} strokeWidth="0.8" opacity={0.4 + corruption * 0.4}>
-                    <path d="M15,50 Q30,40 40,45" />
-                    <path d="M85,50 Q70,60 60,55" />
-                    <path d="M50,15 Q45,30 48,35" />
-                    <path d="M50,85 Q55,70 52,65" />
-                </g>
+                {/* Veins / Scribbles Removed */}
                 
                 {/* Eyelids / Tape */}
                 <path d="M10,50 Q50,20 90,50" fill="none" stroke="#000" strokeWidth="2" opacity={0.3 + corruption * 0.4} />

@@ -197,7 +197,7 @@ export const stopBossBGM = () => {
     }
 };
 
-export const playSound = (type: 'move' | 'select' | 'error' | 'bee' | 'horror' | 'typewriter', corruptionLevel: number = 0) => {
+export const playSound = (type: 'move' | 'select' | 'error' | 'bee' | 'horror' | 'typewriter' | 'execution', corruptionLevel: number = 0) => {
   const ctx = getCtx();
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -226,6 +226,41 @@ export const playSound = (type: 'move' | 'select' | 'error' | 'bee' | 'horror' |
   finalNode.connect(ctx.destination);
 
   switch (type) {
+    case 'execution': {
+      // Heavy bass boom with distortion
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(150 + corruptionLevel * 100, now); // Sharpness increases with corruption
+      osc.frequency.exponentialRampToValueAtTime(10, now + 2.0); // Drops to sub bass
+      gain.gain.setValueAtTime(0.6, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 2.0);
+      
+      const execOsc2 = ctx.createOscillator();
+      execOsc2.type = 'sawtooth';
+      execOsc2.frequency.setValueAtTime(200 + corruptionLevel * 300, now); // Twisted and distorted high pitch
+      execOsc2.frequency.exponentialRampToValueAtTime(20, now + 1.5);
+      
+      const lfoExec = ctx.createOscillator();
+      const lfoGainExec = ctx.createGain();
+      lfoExec.type = 'triangle';
+      lfoExec.frequency.value = 8 + corruptionLevel * 25; // Flutter increases with corruption
+      lfoGainExec.gain.value = 50 + corruptionLevel * 150;
+      
+      lfoExec.connect(lfoGainExec);
+      lfoGainExec.connect(execOsc2.frequency);
+      
+      execOsc2.connect(gain);
+      
+      lfoExec.start(now);
+      lfoExec.stop(now + 2.0);
+      execOsc2.start(now);
+      execOsc2.stop(now + 2.0);
+
+      osc.connect(gain);
+      osc.start(now);
+      osc.stop(now + 2.0);
+      break;
+    }
+
     case 'move': {
       // Base freq 300, drops to 100 with corruption
       const baseFreq = 300 - (corruptionLevel * 200);

@@ -470,6 +470,117 @@ export const EndingScreen = ({
         return () => clearInterval(timer);
     }, [details.desc]);
 
+    if (type === EndingType.SALVATION) {
+        return (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#fdfbf7] overflow-hidden text-slate-800 font-serif">
+                <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/clean-textile.png')] mix-blend-multiply pointer-events-none z-0"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.8)_0%,rgba(240,245,255,0.2)_100%)] pointer-events-none z-0"></div>
+                
+                {/* Divine Light Rays */}
+                <div className="absolute inset-0 z-0 opacity-40 mix-blend-screen pointer-events-none animate-pulse-slow">
+                    {Array.from({ length: 12 }).map((_, i) => (
+                        <div key={i} className="absolute bg-gradient-to-t from-transparent to-yellow-100/50 transform -translate-x-1/2 origin-bottom" style={{
+                            bottom: '-20%',
+                            left: `${50 + (Math.random()*60 - 30)}%`,
+                            width: `${Math.random()*10 + 2}vw`,
+                            height: '150%',
+                            transform: `rotate(${Math.random()*40 - 20}deg)`,
+                            filter: 'blur(20px)'
+                        }}></div>
+                    ))}
+                </div>
+
+                <div className="relative z-10 text-center max-w-4xl px-8 flex flex-col items-center">
+                    <div className="mb-12 animate-float">
+                        <DrawnIcon name="sparkle" className="w-24 h-24 text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]" />
+                    </div>
+
+                    <h1 className="text-6xl md:text-8xl font-sans tracking-[0.3em] font-light text-slate-900 mb-6 uppercase">
+                        {details.title}
+                    </h1>
+                    
+                    <div className="flex items-center gap-4 mb-14">
+                        <div className="h-px w-16 bg-slate-300"></div>
+                        <div className="text-2xl font-serif text-slate-500 tracking-[0.4em] uppercase">{details.sub}</div>
+                        <div className="h-px w-16 bg-slate-300"></div>
+                    </div>
+
+                    <div className="text-xl md:text-2xl font-serif leading-loose text-slate-700 mb-20 max-w-2xl text-center space-y-6">
+                        <p>{typedDesc}</p>
+                    </div>
+
+                    <button 
+                        onClick={onRestart}
+                        className="group relative px-12 py-4 bg-transparent border border-slate-300 text-slate-600 font-sans tracking-[0.3em] text-sm transition-all hover:bg-slate-900 hover:text-white hover:border-slate-900 flex items-center gap-4 rounded-sm"
+                    >
+                        <span className="w-2 h-2 bg-slate-400 rounded-full group-hover:bg-yellow-400 transition-colors"></span>
+                        [ 拥抱黎明 / RESTART ]
+                        <span className="w-2 h-2 bg-slate-400 rounded-full group-hover:bg-yellow-400 transition-colors"></span>
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (type === EndingType.SUBJUGATION) {
+        return (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050000] overflow-hidden text-red-700 font-ui shadow-[inset_0_0_150px_rgba(20,0,0,1)]">
+                <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] mix-blend-multiply pointer-events-none z-0"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,1)_90%)] pointer-events-none z-10"></div>
+                
+                {/* Giant Eye Background */}
+                <div className="absolute inset-0 z-0 opacity-10 flex items-center justify-center pointer-events-none transform scale-150 animate-pulse-slow">
+                     <WallEyeSVG corruption={1.0} />
+                </div>
+                
+                {/* Heavy Glitch Overlay */}
+                <div className="absolute inset-0 z-0 opacity-30 pointer-events-none mix-blend-screen mix-blend-difference">
+                    {Array.from({ length: 20 }).map((_, i) => (
+                        <div key={i} className="absolute bg-red-800 animate-pulse" style={{
+                            top: `${Math.random()*100}%`,
+                            left: 0,
+                            width: '100%',
+                            height: `${Math.random()*4 + 1}px`,
+                            animationDuration: `${Math.random()*0.3 + 0.05}s`,
+                            animationDelay: `${Math.random()}s`,
+                            opacity: Math.random() * 0.5 + 0.1
+                        }}></div>
+                    ))}
+                </div>
+
+                <div className="relative z-20 text-center max-w-3xl px-8 flex flex-col items-center">
+                    <div className="mb-10 w-32 h-32 animate-ping" style={{ animationDuration: '2s' }}>
+                        <DrawnIcon name="eye" className="text-red-600 w-full h-full drop-shadow-[0_0_20px_rgba(220,38,38,0.8)]" />
+                    </div>
+
+                    <h1 className="text-7xl md:text-9xl font-black font-sans tracking-tighter text-red-800 mb-4 drop-shadow-[0_0_10px_rgba(220,38,38,0.4)]">
+                        {details.title}
+                    </h1>
+                    
+                    <div className="text-2xl md:text-3xl font-mono text-red-950 mb-16 tracking-[0.5em] font-bold border-b-2 border-red-900/50 pb-4 inline-block px-12">
+                        {details.sub}
+                    </div>
+
+                    <div className="text-lg md:text-xl font-mono leading-relaxed text-red-600 mb-20 max-w-2xl text-center bg-black/60 p-8 border border-red-900/30 shadow-[0_0_30px_rgba(100,0,0,0.5)] relative">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-800 to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-800 to-transparent"></div>
+                        <p className="animate-pulse">{typedDesc}</p>
+                        <div className="text-red-900 text-xs mt-8 tracking-widest uppercase opacity-70">
+                            ASSIMILATION COMPLETE // THE COMB IS PERFECT
+                        </div>
+                    </div>
+
+                    <button 
+                        onClick={onRestart}
+                        className="group relative px-16 py-4 bg-red-950/50 text-red-500 font-mono text-lg tracking-[0.5em] transition-all hover:bg-red-900 hover:text-black border border-red-800/50 flex items-center gap-4 animate-pulse-slow"
+                    >
+                        [ RESTART ]
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#1a1a1a] font-ui overflow-hidden">
             {/* Collage Background Layers */}
