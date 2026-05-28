@@ -448,6 +448,9 @@ export default function App() {
       } else if (opt.effect === 'imprison_ending') {
           triggerEnding(EndingType.IMPRISONED);
           return;
+      } else if (opt.effect === 'revolution_ending') {
+          triggerEnding(EndingType.REVOLUTION);
+          return;
       } else if (opt.effect === 'bluff_success') {
           setRebel(Math.max(0, rebel - 20)); // Reduce rebel so they don't get caught again immediately
           playSound('select');
@@ -544,7 +547,9 @@ export default function App() {
           unlockLore("panopticon", "全景视野");
       }
       
-      if (type === EntityType.QUEEN_GATE && (rebel > 80 || hasItem('破碎的皇冠'))) {
+      if (type === EntityType.QUEEN_GATE && hasItem('干枯的花朵') && hasItem('记忆碎片') && hasItem('破碎的皇冠')) {
+          // Trigger dialogue instead of boss fight
+      } else if (type === EntityType.QUEEN_GATE && (rebel > 80 || hasItem('破碎的皇冠'))) {
           setGameState(GameState.BOSS_FIGHT);
           playSound('horror');
           return;

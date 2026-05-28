@@ -737,7 +737,7 @@ export const EndingScreen = ({
                             onClick={onRestart}
                             className="group relative px-10 py-4 bg-honey-main text-black font-cute font-bold text-xl transition-all hover:bg-sweet-pink hover:text-white hover:-translate-y-2 hover:shadow-[6px_6px_0px_rgba(0,0,0,0.8)] rounded-2xl border-2 border-black flex items-center gap-2 mx-auto"
                         >
-                            <DrawnIcon name="sparkle" className="w-5 h-5" /> [ 重新开始 / REBOOT ] <DrawnIcon name="sparkle" className="w-5 h-5" />
+                            <DrawnIcon name="sparkle" className="w-5 h-5" /> [ 重新开始 ] <DrawnIcon name="sparkle" className="w-5 h-5" />
                         </button>
                         <div className="absolute top-1/2 left-4 transform -translate-y-1/2 opacity-30 text-xs font-mono">
                             SYS.RST

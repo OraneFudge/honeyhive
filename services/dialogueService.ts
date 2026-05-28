@@ -503,6 +503,13 @@ export const getDialogue = (entityType: EntityType, entityId: string, visited: R
 
   // --- QUEEN GATE ---
   if (entityType === EntityType.QUEEN_GATE) {
+      if (hasItem('干枯的花朵') && hasItem('记忆碎片') && hasItem('破碎的皇冠')) {
+          return createNode('queen_confront_start', '你戴上了那顶不再发光的皇冠，手中紧握着干枯的花朵。你的脑海中翻涌着不属于这里的记忆。巨大的全视之眼俯视着你，但这一次，你没有低头。', [
+              { text: '[质问] 这一切都是一个谎言！', effect: 'rebel', nextId: 'queen_confront_1' },
+              { text: '[恐惧地低头]', effect: 'conform', nextId: 'queen_confront_fail' }
+          ], '全视女王');
+      }
+
       const options: DialogueOption[] = [
           { text: '进入王座厅 (面对审判)', effect: 'neutral', nextId: 'end_check_final' }
       ];
@@ -580,6 +587,24 @@ export const getDialogue = (entityType: EntityType, entityId: string, visited: R
 // Sub-nodes map
 export const getSubNode = (id: string, stats: { hp: number, rebel: number }, hasItem: (item: string) => boolean): DialogueNode | null => {
     switch(id) {
+        case 'queen_confront_1':
+            return createNode('queen_confront_1', '“谎言？”那是一种不依赖空气振荡，直接穿透你神经元深处的声音。“不，这是保护。如果没有这全景的视野，你们只是一群在无知中互相撕咬的野兽。”', [
+                { text: '这些记忆...我们在外面的世界生活过！', effect: 'rebel', nextId: 'queen_confront_2' },
+                { text: '我们...需要保护...', effect: 'conform', nextId: 'queen_confront_fail' }
+            ], '全视女王');
+        case 'queen_confront_2':
+            return createNode('queen_confront_2', '“外面的世界？”无数只巨眼同时眯起。“你手里的花，你脑中的过去，都是我为了筛选不稳定个体而注入的虚拟数据。你所谓的觉醒，只是我的压力测试。”巨大的压迫感让你几乎无法站立。', [
+                { text: '[高举皇冠] 那就让这测试撕裂你的现实！', effect: 'rebel', nextId: 'queen_confront_success' },
+                { text: '（意志完全崩溃）不...不可能...', effect: 'conform', nextId: 'queen_confront_fail' }
+            ], '全视女王');
+        case 'queen_confront_success':
+            return createNode('queen_confront_success', '你将破碎的皇冠狠狠砸向眼前的光幕。花瓣与记忆的碎片一同燃烧，引发了剧烈的逻辑悖论脉冲。监视网络瞬间过载。灯光熄灭了。真正的黑暗与自由一同降临。', [
+                { text: '[终结这一切]', effect: 'revolution_ending', nextId: null }
+            ], '自我');
+        case 'queen_confront_fail':
+            return createNode('queen_confront_fail', '你的意志在绝对的注视下彻底粉碎。手里干枯的花朵瞬间化为灰烬。你忘记了反抗的目的，重新成为了系统里一颗安静的螺丝钉。', [
+                { text: '[接受清洗]', effect: 'imprison_ending', nextId: null }
+            ], '屈服');
         case 'caught_bluff':
             if (stats.rebel < 85) {
                 return createNode('caught_bluff_success', '“...或许是我闻错了。继续你的工作，工蜂。不要偏离规定的航线。”', [
